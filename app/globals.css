@@ -1,26 +1,262 @@
 @import "tailwindcss";
 
+/*
+ * Memory Palace — dark, atmospheric theme.
+ * Warm near-black surfaces, aged-brass accent, six muted room palettes.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Base surfaces */
+  --palace-base: #121110;
+  --palace-surface: #1a1815;
+  --palace-surface-2: #221f1b;
+
+  /* Hairlines & lines */
+  --palace-border: rgba(232, 227, 216, 0.08);
+  --palace-border-strong: rgba(232, 227, 216, 0.14);
+
+  /* Text */
+  --palace-text: #e8e3d8;
+  --palace-muted: #9a917f;
+
+  /* Accent — aged brass by default; user-swappable via [data-accent]. */
+  --palace-accent: #c9a227;
+  --palace-accent-hover: #dcb843;
+  --palace-accent-dim: #8a6f1f;
+  /* The soft candle-glow cast by accent surfaces (buttons, hovered cards). */
+  --palace-accent-glow: rgba(201, 162, 39, 0.5);
+
+  /* Danger — a legible brick-rose for destructive text/icons (deep oxblood
+     stays for fills and room tints, where contrast isn't a factor). ~6.5:1. */
+  --palace-danger: #d18b82;
+
+  /* Six room palette accents (muted, desaturated) */
+  --palette-brass: #c9a227;
+  --palette-oxblood: #7d3b3b;
+  --palette-forest: #4a6350;
+  --palette-ink: #48566b;
+  --palette-plum: #6e4a63;
+  --palette-umber: #8a6a45;
+
+  --palace-selection: rgba(201, 162, 39, 0.28);
+}
+
+/*
+ * Accent themes. Each stays muted and atmospheric, and every accent is
+ * luminous enough to carry the dark button label (#1a1410) at WCAG AA.
+ * Brass is the default and lives in :root above.
+ */
+:root[data-accent="copper"] {
+  --palace-accent: #cf9560;
+  --palace-accent-hover: #e0a875;
+  --palace-accent-dim: #8f6238;
+  --palace-accent-glow: rgba(207, 149, 96, 0.5);
+  --palace-selection: rgba(207, 149, 96, 0.28);
+}
+
+:root[data-accent="sage"] {
+  --palace-accent: #a3b58c;
+  --palace-accent-hover: #b8c8a2;
+  --palace-accent-dim: #6e7f5a;
+  --palace-accent-glow: rgba(163, 181, 140, 0.45);
+  --palace-selection: rgba(163, 181, 140, 0.26);
+}
+
+:root[data-accent="slate"] {
+  --palace-accent: #aab6c6;
+  --palace-accent-hover: #c1cbd8;
+  --palace-accent-dim: #6f7c8f;
+  --palace-accent-glow: rgba(170, 182, 198, 0.45);
+  --palace-selection: rgba(170, 182, 198, 0.26);
+}
+
+/* Reading size — scales everything expressed in rem. Medium (16px) is the
+   default and needs no attribute. */
+:root[data-text-size="small"] {
+  font-size: 15px;
+}
+
+:root[data-text-size="large"] {
+  font-size: 17.5px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-base: var(--palace-base);
+  --color-surface: var(--palace-surface);
+  --color-surface-2: var(--palace-surface-2);
+
+  --color-border-hair: var(--palace-border);
+  --color-border-strong: var(--palace-border-strong);
+
+  --color-text: var(--palace-text);
+  --color-muted: var(--palace-muted);
+
+  --color-accent: var(--palace-accent);
+  --color-accent-hover: var(--palace-accent-hover);
+  --color-accent-dim: var(--palace-accent-dim);
+
+  --color-danger: var(--palace-danger);
+
+  --color-brass: var(--palette-brass);
+  --color-oxblood: var(--palette-oxblood);
+  --color-forest: var(--palette-forest);
+  --color-ink: var(--palette-ink);
+  --color-plum: var(--palette-plum);
+  --color-umber: var(--palette-umber);
+
+  --font-display: var(--font-display), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--palace-base);
+  color: var(--palace-text);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Selection */
+::selection {
+  background: var(--palace-selection);
+  color: var(--palace-text);
+}
+
+/* Focus rings — brass, visible only for keyboard users */
+:focus-visible {
+  outline: 2px solid var(--palace-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Thin, styled scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--palace-border-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--palace-border-strong);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(232, 227, 216, 0.22);
+  background-clip: padding-box;
+}
+
+/* Atmospheric floor-plan surface: warm base + vignette + faint grain */
+.palace-floor {
+  background-color: #17140f;
+  background-image:
+    radial-gradient(
+      120% 100% at 50% 0%,
+      rgba(201, 162, 39, 0.06),
+      transparent 60%
+    ),
+    radial-gradient(
+      140% 120% at 50% 120%,
+      rgba(0, 0, 0, 0.55),
+      transparent 55%
+    ),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  box-shadow: inset 0 0 120px 20px rgba(0, 0, 0, 0.45);
+}
+
+/* Room detail canvas: subtle grain overlay on top of palette tint */
+.room-canvas-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+}
+
+/* Motion — restrained entrances (150–250ms) */
+@keyframes dialogIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideOverIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Page transition — a quiet rise-and-fade as each screen mounts. */
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: pageIn 240ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* Respect reduced-motion globally — via OS preference or the in-app toggle */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:root[data-reduce-motion="true"] *,
+:root[data-reduce-motion="true"] *::before,
+:root[data-reduce-motion="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
 }
