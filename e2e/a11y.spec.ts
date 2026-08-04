@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { objectCards, openFirstObject, openPalace } from "./helpers";
+import { openFirstObject, openFirstRoom, openPalace } from "./helpers";
 
 /**
  * Automated checks catch roughly a third of accessibility defects, so these
@@ -42,11 +42,7 @@ test("the room canvas has no axe violations", async ({ page }) => {
   // Reached by navigation rather than by URL: the route needs a room id, and
   // this is the screen the whole product is built around.
   await openPalace(page, "./palace/");
-  await page
-    .getByRole("link", { name: /^Open / })
-    .first()
-    .click();
-  await expect(objectCards(page).first()).toBeVisible();
+  await openFirstRoom(page);
   expect((await scan(page)).violations).toEqual([]);
 });
 

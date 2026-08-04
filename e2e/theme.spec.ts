@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { objectCards, openPalace } from "./helpers";
+import { openFirstRoom, openPalace } from "./helpers";
 
 /**
  * Parchment is a second identity, not an inversion, so it gets the same
@@ -158,10 +158,6 @@ for (const [name, path] of ROUTES) {
 test("the room canvas has no axe violations in Parchment", async ({ page }) => {
   await chooseTheme(page, "Parchment");
   await page.goto("./palace/");
-  await page
-    .getByRole("link", { name: /^Open / })
-    .first()
-    .click();
-  await expect(objectCards(page).first()).toBeVisible();
+  await openFirstRoom(page);
   expect((await scan(page)).violations).toEqual([]);
 });

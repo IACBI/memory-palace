@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { objectCards, openPalace } from "./helpers";
+import { objectCards, openFirstRoom, openPalace } from "./helpers";
 
 /**
  * The app is entirely local-first, so being unusable offline was the one place
@@ -155,11 +155,7 @@ test("clicking through to a room works offline once it has been prefetched", asy
 
   await page.context().setOffline(true);
   try {
-    await page
-      .getByRole("link", { name: /^Open / })
-      .first()
-      .click();
-    await expect(objectCards(page).first()).toBeVisible();
+    await openFirstRoom(page);
   } finally {
     await page.context().setOffline(false);
   }

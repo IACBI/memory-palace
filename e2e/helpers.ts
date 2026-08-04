@@ -63,13 +63,28 @@ export async function graphSettled(page: Page) {
   }, GRAPH);
 }
 
-/** Opens the editor on the first object of the first room. */
-export async function openFirstObject(page: Page) {
-  await openPalace(page, "./palace/");
+/**
+ * Follows the first room link and waits for that room's canvas to fill in.
+ *
+ * The room reads its id from the query string on the client, so its cards
+ * exist only after a navigation, a hydration and a render. `expect`'s
+ * five-second default was not sized for all three: on a loaded machine it ran
+ * out mid-hydration and reported an empty canvas as a product failure. The
+ * budget here is for the wait, not the assertion the caller then makes — the
+ * same reasoning as the raised test timeout in playwright.config.ts.
+ */
+export async function openFirstRoom(page: Page) {
   await page
     .getByRole("link", { name: /^Open / })
     .first()
     .click();
+  await expect(objectCards(page).first()).toBeVisible({ timeout: 20_000 });
+}
+
+/** Opens the editor on the first object of the first room. */
+export async function openFirstObject(page: Page) {
+  await openPalace(page, "./palace/");
+  await openFirstRoom(page);
   await objectCards(page).first().click();
   await expect(page.getByRole("dialog", { name: /^Edit / })).toBeVisible();
 }

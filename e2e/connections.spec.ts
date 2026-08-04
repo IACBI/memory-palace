@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { objectCards, openPalace } from "./helpers";
+import { objectCards, openFirstRoom, openPalace } from "./helpers";
 
 /**
  * The product sells itself as a *spatial* tool, but until this the only way to
@@ -18,11 +18,7 @@ function hitTargets(page: Page) {
 
 async function openRoomCanvas(page: Page) {
   await openPalace(page, "./palace/");
-  await page
-    .getByRole("link", { name: /^Open / })
-    .first()
-    .click();
-  await expect(objectCards(page).first()).toBeVisible();
+  await openFirstRoom(page);
   expect(await objectCards(page).count()).toBeGreaterThan(1);
   // The layer needs the canvas measured before it can draw anything.
   await expect(hitTargets(page).first()).toBeAttached();
