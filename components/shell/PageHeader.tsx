@@ -1,5 +1,3 @@
-"use client";
-
 /** A consistent page heading: display-serif title with an optional subtitle. */
 export function PageHeader({
   title,
@@ -20,7 +18,9 @@ export function PageHeader({
           <p className="mt-2 max-w-2xl text-sm text-muted">{subtitle}</p>
         ) : null}
       </div>
-      {children ? <div className="flex items-center gap-3">{children}</div> : null}
+      {children ? (
+        <div className="flex items-center gap-3">{children}</div>
+      ) : null}
     </div>
   );
 }

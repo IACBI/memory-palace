@@ -8,10 +8,13 @@ export function TagInput({
   value,
   onChange,
   suggestions,
+  labelledBy,
 }: {
   value: string[];
   onChange: (next: string[]) => void;
   suggestions: string[];
+  /** Id of the visible group heading that names this control. */
+  labelledBy?: string;
 }) {
   const [draft, setDraft] = useState("");
 
@@ -33,7 +36,7 @@ export function TagInput({
     .slice(0, 6);
 
   return (
-    <div>
+    <div role="group" aria-labelledby={labelledBy}>
       <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border-hair bg-surface px-2 py-2 focus-within:border-accent-dim">
         {value.map((tag) => (
           <Tag key={tag} onRemove={() => remove(tag)}>

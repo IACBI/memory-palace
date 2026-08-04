@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Dialog } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -39,6 +39,10 @@ export function RoomDialog({
 }) {
   const [draft, setDraft] = useState<RoomDraft>(initial ?? EMPTY);
   const [wasOpen, setWasOpen] = useState(open);
+  const nameId = useId();
+  const descriptionId = useId();
+  const iconLabelId = useId();
+  const paletteLabelId = useId();
 
   // Reset the draft each time the dialog transitions closed -> open.
   if (open !== wasOpen) {
@@ -63,7 +67,11 @@ export function RoomDialog({
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={submit} disabled={!draft.name.trim()}>
+          <Button
+            variant="primary"
+            onClick={submit}
+            disabled={!draft.name.trim()}
+          >
             {mode === "create" ? "Create room" : "Save changes"}
           </Button>
         </>
@@ -71,40 +79,53 @@ export function RoomDialog({
     >
       <div className="space-y-4">
         <div>
-          <label className="mb-1.5 block text-xs tracking-widest text-muted uppercase">
+          <label
+            htmlFor={nameId}
+            className="mb-1.5 block text-xs tracking-widest text-muted uppercase"
+          >
             Name
           </label>
           <Input
+            id={nameId}
             value={draft.name}
             onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
             onKeyDown={(e) => {
               if (e.key === "Enter") submit();
             }}
             placeholder="The Study"
-            aria-label="Room name"
           />
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs tracking-widest text-muted uppercase">
+          <label
+            htmlFor={descriptionId}
+            className="mb-1.5 block text-xs tracking-widest text-muted uppercase"
+          >
             Description
           </label>
           <Textarea
+            id={descriptionId}
             rows={2}
             value={draft.description}
             onChange={(e) =>
               setDraft((d) => ({ ...d, description: e.target.value }))
             }
             placeholder="What lives here?"
-            aria-label="Room description"
           />
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs tracking-widest text-muted uppercase">
+          <span
+            id={iconLabelId}
+            className="mb-1.5 block text-xs tracking-widest text-muted uppercase"
+          >
             Icon
-          </label>
-          <div className="grid grid-cols-6 gap-1.5">
+          </span>
+          <div
+            role="group"
+            aria-labelledby={iconLabelId}
+            className="grid grid-cols-6 gap-1.5"
+          >
             {ROOM_ICON_CHOICES.map((icon) => {
               const active = draft.icon === icon;
               return (
@@ -128,10 +149,17 @@ export function RoomDialog({
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs tracking-widest text-muted uppercase">
+          <span
+            id={paletteLabelId}
+            className="mb-1.5 block text-xs tracking-widest text-muted uppercase"
+          >
             Palette
-          </label>
-          <div className="grid grid-cols-6 gap-1.5">
+          </span>
+          <div
+            role="group"
+            aria-labelledby={paletteLabelId}
+            className="grid grid-cols-6 gap-1.5"
+          >
             {PALETTE_CHOICES.map((palette) => {
               const active = draft.palette === palette;
               return (

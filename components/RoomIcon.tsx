@@ -1,12 +1,23 @@
 "use client";
 
-import { DoorOpen, icons, type LucideProps } from "lucide-react";
+import type { LucideProps } from "lucide-react";
+import {
+  FALLBACK_ROOM_ICON,
+  isRoomIconName,
+  ROOM_ICONS,
+  type RoomIconName,
+} from "@/lib/icon-set";
 
 /**
- * Renders a lucide icon by its string name (as stored on a Room).
- * Falls back to a door icon when the name is unknown.
+ * Renders a room's icon by name.
+ *
+ * Accepts a plain `string` because stored and imported data may carry a name
+ * this build does not know; those fall back to a door rather than crashing.
  */
-export function RoomIcon({ name, ...props }: { name: string } & LucideProps) {
-  const Icon = (icons as Record<string, React.ComponentType<LucideProps>>)[name] ?? DoorOpen;
+export function RoomIcon({
+  name,
+  ...props
+}: { name: RoomIconName | string } & LucideProps) {
+  const Icon = ROOM_ICONS[isRoomIconName(name) ? name : FALLBACK_ROOM_ICON];
   return <Icon {...props} />;
 }

@@ -1,27 +1,59 @@
 /**
  * Core data model for Memory Palace.
  *
- * All timestamps are ISO 8601 strings. All ids are generated with
- * `crypto.randomUUID()`.
+ * All timestamps are ISO 8601 strings; all ids come from `newId()`.
+ *
+ * Each closed set is declared once as a `const` array and its type derived
+ * from it, so the runtime validators in `lib/storage` and the compile-time
+ * types can never drift apart.
  */
 
 /** The six room accent palettes. */
-export type PaletteKey = 'brass' | 'oxblood' | 'forest' | 'ink' | 'plum' | 'umber';
+export const PALETTE_KEYS = [
+  "brass",
+  "oxblood",
+  "forest",
+  "ink",
+  "plum",
+  "umber",
+] as const;
+export type PaletteKey = (typeof PALETTE_KEYS)[number];
 
 /** The app-wide accent themes a user can choose in Settings. */
-export type AccentKey = 'brass' | 'copper' | 'sage' | 'slate';
+export const ACCENT_KEYS = ["brass", "copper", "sage", "slate"] as const;
+export type AccentKey = (typeof ACCENT_KEYS)[number];
+
+/**
+ * Surface theme.
+ *
+ * `palace` is the candlelit dark original; `parchment` is a light theme with
+ * its own identity rather than an inversion of it. `auto` follows the system.
+ */
+export const THEME_KEYS = ["auto", "palace", "parchment"] as const;
+export type ThemeKey = (typeof THEME_KEYS)[number];
 
 /** Reading-size preference, applied as a root font-size scale. */
-export type TextSize = 'small' | 'medium' | 'large';
+export const TEXT_SIZE_KEYS = ["small", "medium", "large"] as const;
+export type TextSize = (typeof TEXT_SIZE_KEYS)[number];
 
 /** Type of a knowledge object stored inside a room. */
-export type ObjectType = 'note' | 'link' | 'idea' | 'file';
+export const OBJECT_TYPE_KEYS = ["note", "link", "idea", "file"] as const;
+export type ObjectType = (typeof OBJECT_TYPE_KEYS)[number];
 
 /** Kinds of activity we record for the timeline. */
-export type ActivityKind = 'created' | 'updated' | 'moved' | 'connected' | 'deleted';
+export const ACTIVITY_KINDS = [
+  "created",
+  "updated",
+  "moved",
+  "connected",
+  "disconnected",
+  "deleted",
+] as const;
+export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
 
-/** A target of an activity event. */
-export type TargetType = 'room' | 'object';
+/** What an activity event points at. */
+export const TARGET_TYPES = ["room", "object"] as const;
+export type TargetType = (typeof TARGET_TYPES)[number];
 
 /**
  * A room's placement on the palace floor plan. Expressed in palace grid
@@ -92,12 +124,13 @@ export interface ActivityEvent {
 
 /** User-facing preferences that persist with the palace. */
 export interface PalaceSettings {
+  /** Surface theme: system, dark or light. */
+  theme: ThemeKey;
   /** App-wide accent theme. */
   accent: AccentKey;
   /** Reading size, applied as a root font-size scale. */
   textSize: TextSize;
   reduceMotion: boolean;
-  lastView: string;
 }
 
 /** The complete, serialisable palace document. */

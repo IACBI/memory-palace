@@ -46,9 +46,7 @@ export function ConfirmDialog({
         </>
       }
     >
-      <p className="text-sm text-muted">
-        {note ?? "This cannot be undone."}
-      </p>
+      <p className="text-sm text-muted">{note ?? "This cannot be undone."}</p>
     </Dialog>
   );
 }

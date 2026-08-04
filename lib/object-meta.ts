@@ -1,4 +1,10 @@
-import { StickyNote, Link2, Lightbulb, FileText, type LucideIcon } from "lucide-react";
+import {
+  StickyNote,
+  Link2,
+  Lightbulb,
+  FileText,
+  type LucideIcon,
+} from "lucide-react";
 import type { ObjectType } from "@/lib/types";
 
 export const OBJECT_TYPE_META: Record<

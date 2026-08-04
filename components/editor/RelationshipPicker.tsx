@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRoomMap } from "@/lib/hooks/use-room-map";
 import { Plus, Search } from "lucide-react";
 import type { KnowledgeObject, Room } from "@/lib/types";
 import { paletteColor } from "@/lib/palette";
@@ -18,7 +19,7 @@ export function RelationshipPicker({
   const [query, setQuery] = useState("");
   const [label, setLabel] = useState("");
 
-  const roomById = new Map(rooms.map((room) => [room.id, room]));
+  const roomById = useRoomMap(rooms);
   const results = candidates
     .filter((object) =>
       query ? object.title.toLowerCase().includes(query.toLowerCase()) : true,
@@ -49,7 +50,9 @@ export function RelationshipPicker({
       <ul className="mt-2 max-h-52 space-y-1 overflow-y-auto">
         {results.map((object) => {
           const room = roomById.get(object.roomId);
-          const color = room ? paletteColor(room.palette) : "var(--palace-muted)";
+          const color = room
+            ? paletteColor(room.palette)
+            : "var(--palace-muted)";
           return (
             <li key={object.id}>
               <button

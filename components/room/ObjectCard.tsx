@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState, type RefObject } from "react";
+import { useRef, useState } from "react";
 import { Pin, ExternalLink } from "lucide-react";
-import type { KnowledgeObject, ObjectPosition } from "@/lib/types";
+import type { KnowledgeObject, PaletteKey } from "@/lib/types";
 import { OBJECT_TYPE_META } from "@/lib/object-meta";
+import { paletteColor, paletteTint } from "@/lib/palette";
 import { usePalaceStore } from "@/lib/store";
 
 const DRAG_THRESHOLD = 4; // px before a press becomes a drag
@@ -15,26 +16,55 @@ function clamp(value: number, min: number, max: number): number {
 
 export function ObjectCard({
   object,
-  accent,
-  canvasRef,
+  palette,
+  canvas,
+  instructionsId,
+  linking,
+  isLinkSource,
   onOpen,
   onRequestDelete,
+  onStartLink,
+  onLinkTo,
+  onCancelLink,
 }: {
   object: KnowledgeObject;
-  accent: string;
-  canvasRef: RefObject<HTMLDivElement | null>;
+  /** The owning room's palette, used to tint the card. */
+  palette: PaletteKey;
+  /** The canvas element, for converting pointer positions to percentages. */
+  canvas: HTMLElement | null;
+  /** Id of the canvas-level element describing the keyboard controls. */
+  instructionsId: string;
+  /** Whether a link is currently being drawn from some card. */
+  linking: boolean;
+  /** Whether that card is this one. */
+  isLinkSource: boolean;
   onOpen: (id: string) => void;
   onRequestDelete: (object: KnowledgeObject) => void;
+  /** Begin drawing a link from this card, optionally following the pointer. */
+  onStartLink: (id: string, pointer?: { x: number; y: number }) => void;
+  /** Finish a link at this card. */
+  onLinkTo: (id: string) => void;
+  onCancelLink: () => void;
 }) {
   const moveObject = usePalaceStore((s) => s.moveObject);
+  const accent = paletteColor(palette);
 
-  // While dragging we hold a transient position; otherwise the store is truth.
-  const [dragPos, setDragPos] = useState<ObjectPosition | null>(null);
-  const [dragging, setDragging] = useState(false);
+  /**
+   * A drag is expressed as a pixel offset, not as a new percentage position.
+   *
+   * `left`/`top` are layout properties: writing them on every pointer move
+   * forced a layout and repaint each frame. The card stays anchored at its
+   * committed position and rides a `transform` instead, which the compositor
+   * can handle on its own.
+   */
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number } | null>(
+    null,
+  );
   const startRef = useRef<{ x: number; y: number } | null>(null);
   const movedRef = useRef(false);
 
-  const pos = dragPos ?? object.position;
+  const dragging = dragOffset !== null;
+  const pos = object.position;
 
   const meta = OBJECT_TYPE_META[object.type];
   const Glyph = meta.icon;
@@ -42,7 +72,7 @@ export function ObjectCard({
   const overflow = object.tags.length - visibleTags.length;
 
   const pointToPercent = (clientX: number, clientY: number) => {
-    const rect = canvasRef.current?.getBoundingClientRect();
+    const rect = canvas?.getBoundingClientRect();
     if (!rect) return pos;
     return {
       x: clamp(((clientX - rect.left) / rect.width) * 100, 3, 97),
@@ -63,8 +93,7 @@ export function ObjectCard({
     const dy = e.clientY - startRef.current.y;
     if (!movedRef.current && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
     movedRef.current = true;
-    if (!dragging) setDragging(true);
-    setDragPos(pointToPercent(e.clientX, e.clientY));
+    setDragOffset({ x: dx, y: dy });
   };
 
   const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -76,8 +105,7 @@ export function ObjectCard({
       const next = pointToPercent(e.clientX, e.clientY);
       moveObject(object.id, next);
     }
-    setDragPos(null);
-    setDragging(false);
+    setDragOffset(null);
   };
 
   const nudge = (dx: number, dy: number) => {
@@ -90,6 +118,23 @@ export function ObjectCard({
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const step = e.shiftKey ? 5 : 2;
+
+    // While a link is being drawn, Enter lands it here rather than opening the
+    // editor — otherwise finishing a link by keyboard is impossible.
+    if (e.key.toLowerCase() === "l") {
+      e.preventDefault();
+      if (!linking) onStartLink(object.id);
+      else if (isLinkSource) onCancelLink();
+      else onLinkTo(object.id);
+      return;
+    }
+    if (linking && (e.key === "Enter" || e.key === " ")) {
+      e.preventDefault();
+      if (isLinkSource) onCancelLink();
+      else onLinkTo(object.id);
+      return;
+    }
+
     switch (e.key) {
       case "ArrowUp":
         e.preventDefault();
@@ -126,38 +171,80 @@ export function ObjectCard({
     <div
       role="button"
       tabIndex={0}
-      aria-label={`${object.title}, ${meta.label}, at ${Math.round(
-        pos.x,
-      )} percent across and ${Math.round(
-        pos.y,
-      )} percent down. Enter to edit, arrow keys to move, Delete to remove.`}
+      // Name stays stable so nudging the card does not re-announce the whole
+      // sentence on every arrow press; the live position and the instructions
+      // are described separately.
+      aria-label={`${object.title}, ${meta.label}`}
+      aria-describedby={instructionsId}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onKeyDown={onKeyDown}
+      data-object-id={object.id}
       onClick={() => {
-        if (!movedRef.current) onOpen(object.id);
+        if (movedRef.current) return;
+        if (linking && !isLinkSource) onLinkTo(object.id);
+        else if (linking) onCancelLink();
+        else onOpen(object.id);
       }}
       className={`group absolute touch-none rounded-xl border bg-surface p-3 transition-shadow duration-150 select-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
         dragging
           ? "z-20 cursor-grabbing shadow-[0_18px_50px_-12px_rgba(0,0,0,0.75)]"
           : "z-10 cursor-grab shadow-[0_2px_16px_-8px_rgba(0,0,0,0.6)] hover:shadow-[0_8px_36px_-12px_var(--glow)]"
+      } ${
+        isLinkSource
+          ? "ring-2 ring-accent"
+          : linking
+            ? "cursor-crosshair ring-1 ring-accent-dim"
+            : ""
       }`}
       style={
         {
           left: `${pos.x}%`,
           top: `${pos.y}%`,
           width: CARD_WIDTH,
-          transform: `translate(-50%, -50%) ${dragging ? "scale(1.03)" : "scale(1)"}`,
-          borderColor: `${accent}55`,
-          ["--glow" as string]: `${accent}66`,
+          // The drag offset rides here rather than in left/top: transform is
+          // composited, layout properties are not.
+          transform: dragOffset
+            ? `translate(calc(-50% + ${dragOffset.x}px), calc(-50% + ${dragOffset.y}px)) scale(1.03)`
+            : "translate(-50%, -50%) scale(1)",
+          borderColor: paletteTint(palette, "edge"),
+          ["--glow" as string]: paletteTint(palette, "glow"),
         } as React.CSSProperties
       }
     >
+      {/*
+        The link handle: a pointer affordance, not a control.
+
+        The card is already `role="button"`, and nesting a real button inside
+        one is `nested-interactive` — the two names collide and a screen reader
+        cannot tell which is which. Keyboard users reach the same behaviour
+        through the L key, which the canvas instructions describe, so this
+        stays hidden from the accessibility tree and handles pointers only.
+      */}
+      <span
+        aria-hidden
+        data-link-handle
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          onStartLink(object.id, { x: e.clientX, y: e.clientY });
+        }}
+        className="absolute top-1/2 -right-2.5 z-30 flex h-5 w-5 -translate-y-1/2 cursor-crosshair items-center justify-center rounded-full border border-border-strong bg-surface opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+      >
+        <span
+          className="h-1.5 w-1.5 rounded-full"
+          style={{ backgroundColor: accent }}
+        />
+      </span>
+
       <div className="flex items-center justify-between gap-2">
         <span
           className="flex h-6 w-6 items-center justify-center rounded-md"
-          style={{ backgroundColor: `${accent}26`, color: accent }}
+          style={{
+            backgroundColor: paletteTint(palette, "chip"),
+            color: accent,
+          }}
         >
           <Glyph size={13} strokeWidth={1.75} />
         </span>
@@ -176,13 +263,13 @@ export function ObjectCard({
           {visibleTags.map((tag) => (
             <span
               key={tag}
-              className="rounded-full border border-border-hair bg-surface-2 px-1.5 py-0.5 text-[10px] text-muted"
+              className="rounded-full border border-border-hair bg-surface-2 px-1.5 py-0.5 text-[11px] text-muted"
             >
               {tag}
             </span>
           ))}
           {overflow > 0 ? (
-            <span className="text-[10px] text-muted">+{overflow}</span>
+            <span className="text-[11px] text-muted">+{overflow}</span>
           ) : null}
         </div>
       )}

@@ -1,32 +1,33 @@
-import type {
-  ActivityEvent,
-  Connection,
-  KnowledgeObject,
-  PalaceData,
-  PalaceSettings,
-  Room,
-} from '@/lib/types';
-import { normalizeSettings } from '@/lib/settings';
-import type { StorageAdapter } from './adapter';
+import {
+  ACTIVITY_KINDS,
+  OBJECT_TYPE_KEYS,
+  PALETTE_KEYS,
+  TARGET_TYPES,
+  type ActivityEvent,
+  type Connection,
+  type KnowledgeObject,
+  type PalaceData,
+  type PalaceSettings,
+  type Room,
+} from "@/lib/types";
+import { normalizeSettings } from "@/lib/settings";
+import { FALLBACK_ROOM_ICON, isRoomIconName } from "@/lib/icon-set";
+import { CorruptPalaceError, isQuotaError, StorageQuotaError } from "./errors";
+import type { StorageAdapter } from "./adapter";
 
 /** The localStorage key under which the palace document is stored. */
-export const STORAGE_KEY = 'memory-palace-data:v1';
-
-const OBJECT_TYPES = ['note', 'link', 'idea', 'file'] as const;
-const PALETTES = ['brass', 'oxblood', 'forest', 'ink', 'plum', 'umber'] as const;
-const ACTIVITY_KINDS = ['created', 'updated', 'moved', 'connected', 'deleted'] as const;
-const TARGET_TYPES = ['room', 'object'] as const;
+export const STORAGE_KEY = "memory-palace-data:v1";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function isString(value: unknown): value is string {
-  return typeof value === 'string';
+  return typeof value === "string";
 }
 
 function isNumber(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value);
+  return typeof value === "number" && Number.isFinite(value);
 }
 
 function isOneOf<T extends readonly string[]>(
@@ -40,7 +41,12 @@ function validateRoom(value: unknown): Room | null {
   if (!isRecord(value)) return null;
   const pos = value.position;
   if (!isRecord(pos)) return null;
-  if (!isNumber(pos.x) || !isNumber(pos.y) || !isNumber(pos.w) || !isNumber(pos.h)) {
+  if (
+    !isNumber(pos.x) ||
+    !isNumber(pos.y) ||
+    !isNumber(pos.w) ||
+    !isNumber(pos.h)
+  ) {
     return null;
   }
   if (
@@ -48,7 +54,7 @@ function validateRoom(value: unknown): Room | null {
     !isString(value.name) ||
     !isString(value.description) ||
     !isString(value.icon) ||
-    !isOneOf(value.palette, PALETTES) ||
+    !isOneOf(value.palette, PALETTE_KEYS) ||
     !isString(value.createdAt) ||
     !isString(value.updatedAt)
   ) {
@@ -58,7 +64,9 @@ function validateRoom(value: unknown): Room | null {
     id: value.id,
     name: value.name,
     description: value.description,
-    icon: value.icon,
+    // An icon name this build does not ship is coerced rather than rejected:
+    // a palette exported from a newer version should still import.
+    icon: isRoomIconName(value.icon) ? value.icon : FALLBACK_ROOM_ICON,
     palette: value.palette,
     position: { x: pos.x, y: pos.y, w: pos.w, h: pos.h },
     createdAt: value.createdAt,
@@ -74,7 +82,7 @@ function validateObject(value: unknown): KnowledgeObject | null {
   if (
     !isString(value.id) ||
     !isString(value.roomId) ||
-    !isOneOf(value.type, OBJECT_TYPES) ||
+    !isOneOf(value.type, OBJECT_TYPE_KEYS) ||
     !isString(value.title) ||
     !isString(value.content) ||
     !isString(value.createdAt) ||
@@ -84,7 +92,8 @@ function validateObject(value: unknown): KnowledgeObject | null {
   }
   if (value.url !== undefined && !isString(value.url)) return null;
   if (value.fileName !== undefined && !isString(value.fileName)) return null;
-  if (value.pinned !== undefined && typeof value.pinned !== 'boolean') return null;
+  if (value.pinned !== undefined && typeof value.pinned !== "boolean")
+    return null;
 
   const object: KnowledgeObject = {
     id: value.id,
@@ -99,7 +108,7 @@ function validateObject(value: unknown): KnowledgeObject | null {
   };
   if (isString(value.url)) object.url = value.url;
   if (isString(value.fileName)) object.fileName = value.fileName;
-  if (typeof value.pinned === 'boolean') object.pinned = value.pinned;
+  if (typeof value.pinned === "boolean") object.pinned = value.pinned;
   return object;
 }
 
@@ -146,7 +155,9 @@ function validateActivity(value: unknown): ActivityEvent | null {
  * back to their defaults rather than rejecting the whole document.
  */
 function validateSettings(value: unknown): PalaceSettings {
-  return normalizeSettings(isRecord(value) ? (value as Partial<PalaceSettings>) : null);
+  return normalizeSettings(
+    isRecord(value) ? (value as Partial<PalaceSettings>) : null,
+  );
 }
 
 /**
@@ -209,7 +220,7 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 
   private get storage(): Storage | null {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === "undefined") return null;
     try {
       return window.localStorage;
     } catch {
@@ -217,16 +228,37 @@ export class LocalStorageAdapter implements StorageAdapter {
     }
   }
 
+  /**
+   * Reads the stored palace.
+   *
+   * `null` means "nothing saved here yet" and only that. Content that exists
+   * but cannot be read throws instead, so the app can warn the user before
+   * offering to start over — treating it as an empty palace would invite them
+   * to overwrite data they may still want.
+   */
   async load(): Promise<PalaceData | null> {
     const storage = this.storage;
     if (!storage) return null;
     const raw = storage.getItem(this.key);
     if (!raw) return null;
+
+    let parsed: unknown;
     try {
-      return validatePalaceData(JSON.parse(raw));
-    } catch {
-      return null;
+      parsed = JSON.parse(raw);
+    } catch (error) {
+      throw new CorruptPalaceError(
+        "The saved palace is not valid JSON.",
+        error,
+      );
     }
+
+    const data = validatePalaceData(parsed);
+    if (!data) {
+      throw new CorruptPalaceError(
+        "The saved palace does not match the expected format.",
+      );
+    }
+    return data;
   }
 
   async save(data: PalaceData): Promise<void> {
@@ -234,9 +266,11 @@ export class LocalStorageAdapter implements StorageAdapter {
     if (!storage) return;
     try {
       storage.setItem(this.key, JSON.stringify(data));
-    } catch {
-      // Quota exceeded or serialisation failure — swallow so the UI stays
-      // responsive; a future adapter can surface this to the user.
+    } catch (error) {
+      // Never swallowed: a user whose quota is full would otherwise keep
+      // editing an app that silently stopped saving.
+      if (isQuotaError(error)) throw new StorageQuotaError(error);
+      throw error;
     }
   }
 

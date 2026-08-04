@@ -5,10 +5,15 @@ import { TriangleAlert } from "lucide-react";
 
 export default function Error({
   error,
-  reset,
+  unstable_retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  /**
+   * Re-renders the boundary's children. Preferred over `reset()`, which only
+   * clears the error state — the button used to claim it reloaded the view
+   * while doing nothing of the sort.
+   */
+  unstable_retry: () => void;
 }) {
   useEffect(() => {
     console.error(error);
@@ -28,8 +33,8 @@ export default function Error({
       </p>
       <button
         type="button"
-        onClick={reset}
-        className="mt-6 inline-flex h-10 items-center justify-center rounded-lg bg-accent px-5 text-sm font-medium text-[#1a1410] transition-all duration-200 hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+        onClick={() => unstable_retry()}
+        className="mt-6 inline-flex h-10 items-center justify-center rounded-lg bg-accent px-5 text-sm font-medium text-on-accent transition-colors duration-200 hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
       >
         Reload this view
       </button>

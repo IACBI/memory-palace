@@ -1,23 +1,30 @@
 "use client";
 
 import { X } from "lucide-react";
+import { paletteTint } from "@/lib/palette";
+import type { PaletteKey } from "@/lib/types";
 
 /** A small palette-aware pill, optionally removable. */
 export function Tag({
   children,
-  color,
+  palette,
   onRemove,
 }: {
   children: React.ReactNode;
-  color?: string;
+  /** Tints the pill to a room's colour. Neutral when omitted. */
+  palette?: PaletteKey;
   onRemove?: () => void;
 }) {
   return (
     <span
       className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] leading-none text-text"
       style={{
-        borderColor: color ? `${color}55` : "var(--palace-border)",
-        backgroundColor: color ? `${color}1f` : "var(--palace-surface-2)",
+        borderColor: palette
+          ? paletteTint(palette, "edge")
+          : "var(--palace-border)",
+        backgroundColor: palette
+          ? paletteTint(palette, "veil")
+          : "var(--palace-surface-2)",
       }}
     >
       <span className="truncate">{children}</span>

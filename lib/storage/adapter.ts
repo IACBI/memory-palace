@@ -1,4 +1,4 @@
-import type { PalaceData } from '@/lib/types';
+import type { PalaceData } from "@/lib/types";
 
 /**
  * Persistence contract for the palace document.

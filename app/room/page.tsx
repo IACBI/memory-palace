@@ -1,5 +1,12 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { RoomView } from "@/components/room/RoomView";
+import { RoomSkeleton } from "@/components/skeletons/RouteSkeletons";
+
+export const metadata: Metadata = {
+  title: "Room",
+  description: "A room in your palace, with its objects laid out spatially.",
+};
 
 /**
  * The room detail screen. The room id travels as a `?r=<id>` query param
@@ -9,7 +16,7 @@ import { RoomView } from "@/components/room/RoomView";
  */
 export default function RoomPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<RoomSkeleton />}>
       <RoomView />
     </Suspense>
   );

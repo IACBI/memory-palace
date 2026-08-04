@@ -5,6 +5,7 @@ const VERB: Record<ActivityEvent["kind"], string> = {
   updated: "Edited",
   moved: "Moved",
   connected: "Connected",
+  disconnected: "Disconnected",
   deleted: "Removed",
 };
 
@@ -30,7 +31,10 @@ export function activityPhrase(
     : undefined;
 
   if (room) {
-    const preposition = event.kind === "connected" ? "from" : "in";
+    const preposition =
+      event.kind === "connected" || event.kind === "disconnected"
+        ? "from"
+        : "in";
     return `${verb} ${quoted} ${preposition} ${room.name}`;
   }
   return `${verb} ${quoted}`;

@@ -2,52 +2,47 @@
 
 import { useEffect } from "react";
 import { usePalaceStore } from "@/lib/store";
+import {
+  applyDisplayPrefs,
+  toDisplayPrefs,
+  writeDisplayPrefs,
+} from "@/lib/prefs";
 
 /**
- * Hydrates the palace store from persistence on mount and gates the app
- * behind a quiet loading state until data is ready.
+ * Starts hydration and keeps display preferences mirrored to `<html>`.
+ *
+ * Deliberately renders `children` unconditionally. Gating the whole tree
+ * behind a spinner meant every route's static HTML contained nothing but
+ * "Opening the palace…" — no content to paint, nothing to index, and no
+ * chance for a route to describe itself. Screens now render their own
+ * skeletons while `hydrationState` is `loading`.
  */
 export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const hydrated = usePalaceStore((state) => state.hydrated);
   const hydrate = usePalaceStore((state) => state.hydrate);
-  const reduceMotion = usePalaceStore((state) => state.settings.reduceMotion);
-  const accent = usePalaceStore((state) => state.settings.accent);
-  const textSize = usePalaceStore((state) => state.settings.textSize);
+  const settings = usePalaceStore((state) => state.settings);
+  const hydrationState = usePalaceStore((state) => state.hydrationState);
 
   useEffect(() => {
     void hydrate();
   }, [hydrate]);
 
-  // Reflect preferences onto <html> so the CSS variable themes take effect.
   useEffect(() => {
-    document.documentElement.dataset.reduceMotion = reduceMotion
-      ? "true"
-      : "false";
-  }, [reduceMotion]);
+    // Before hydration the inline <head> script owns these attributes; writing
+    // defaults over it here would cause the flash it exists to prevent.
+    if (hydrationState === "loading") return;
+    const prefs = toDisplayPrefs(settings);
+    applyDisplayPrefs(prefs);
+    writeDisplayPrefs(prefs);
 
-  useEffect(() => {
-    document.documentElement.dataset.accent = accent;
-  }, [accent]);
-
-  useEffect(() => {
-    document.documentElement.dataset.textSize = textSize;
-  }, [textSize]);
-
-  if (!hydrated) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-base">
-        <div className="flex flex-col items-center gap-4">
-          <div
-            className="h-8 w-8 animate-spin rounded-full border-2 border-border-strong border-t-accent"
-            aria-hidden
-          />
-          <p className="font-display text-lg tracking-wide text-muted">
-            Opening the palace…
-          </p>
-        </div>
-      </div>
-    );
-  }
+    // On `auto`, the system can change theme while the app is open — at
+    // sunset, on most desktops. Without this the palace stays as it was until
+    // the next reload.
+    if (settings.theme !== "auto" || !window.matchMedia) return;
+    const query = window.matchMedia("(prefers-color-scheme: light)");
+    const reapply = () => applyDisplayPrefs(prefs);
+    query.addEventListener("change", reapply);
+    return () => query.removeEventListener("change", reapply);
+  }, [settings, hydrationState]);
 
   return <>{children}</>;
 }

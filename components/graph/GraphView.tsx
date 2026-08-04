@@ -1,17 +1,37 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useRoomMap } from "@/lib/hooks/use-room-map";
 import {
   forceSimulation,
   forceLink,
   forceManyBody,
   forceCenter,
   forceCollide,
+  forceX,
+  forceY,
   type Simulation,
   type SimulationNodeDatum,
   type SimulationLinkDatum,
 } from "d3-force";
+import { Maximize, Minus, Plus } from "lucide-react";
 import { usePalaceStore } from "@/lib/store";
+import { graphSignature } from "@/lib/graph-key";
+import {
+  collisionRadius,
+  hubCount,
+  hubIds,
+  nodeRadius,
+} from "@/lib/graph-metrics";
+import { linkPath } from "@/lib/canvas-links";
+import { prefersReducedMotion } from "@/lib/prefs";
 import { paletteColor } from "@/lib/palette";
 import type { KnowledgeObject, Room } from "@/lib/types";
 
@@ -54,18 +74,28 @@ export function GraphView({
   const svgRef = useRef<SVGSVGElement>(null);
   const nodesRef = useRef<GNode[]>([]);
   const simRef = useRef<Simulation<GNode, GLink> | null>(null);
-  const roamRef = useRef<{ startX: number; startY: number; ox: number; oy: number } | null>(null);
+  const roamRef = useRef<{
+    startX: number;
+    startY: number;
+    ox: number;
+    oy: number;
+  } | null>(null);
   const dragRef = useRef<{ id: string; moved: boolean } | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const helpId = useId();
+  const nodeIdPrefix = useId();
 
   const [frame, setFrame] = useState<{ nodes: GNode[]; links: GLink[] }>({
     nodes: [],
     links: [],
   });
   const [hovered, setHovered] = useState<string | null>(null);
+  const [cursorId, setCursorId] = useState<string | null>(null);
+  const [neighbourCursor, setNeighbourCursor] = useState<string | null>(null);
   const [focusRooms, setFocusRooms] = useState<Set<string>>(new Set());
   const [transform, setTransform] = useState<Transform>({ x: 0, y: 0, k: 1 });
 
-  const roomById = useMemo(() => new Map(rooms.map((r) => [r.id, r])), [rooms]);
+  const roomById = useRoomMap(rooms);
 
   // Neighbor adjacency for hover highlighting.
   const neighbors = useMemo(() => {
@@ -79,8 +109,72 @@ export function GraphView({
     return map;
   }, [connections]);
 
-  // Build & run the force simulation whenever the data changes.
+  /**
+   * The graph's *shape*: which nodes exist and what links them.
+   *
+   * The simulation effect keys off this rather than the arrays themselves.
+   * The store replaces `objects` on every edit, so a single keystroke in the
+   * object editor used to tear down and re-run the whole layout — including
+   * hundreds of synchronous force ticks — while the user was typing.
+   */
+  const graphKey = useMemo(
+    () => graphSignature(objects, connections),
+    [objects, connections],
+  );
+
+  /** Titles are read at paint time, so renaming never re-runs the layout. */
+  const titleById = useMemo(
+    () => new Map(objects.map((o) => [o.id, o.title])),
+    [objects],
+  );
+
+  // The simulation effect reads the latest data without depending on array
+  // identity. Declared before that effect so it is already current when the
+  // graph's shape changes — effects run in declaration order.
+  const dataRef = useRef({ objects, connections });
   useEffect(() => {
+    dataRef.current = { objects, connections };
+  });
+
+  /**
+   * Frames every node.
+   *
+   * A force layout has no obligation to stay inside the box it started in —
+   * disconnected clusters repel each other indefinitely — so a graph could
+   * settle with half its nodes past the top edge and nothing to suggest they
+   * were there. Fitting after the layout settles makes "everything is on
+   * screen" a property of the view rather than a hope about the physics.
+   */
+  const fitToView = useCallback(() => {
+    const settled = nodesRef.current;
+    if (settled.length === 0) return;
+
+    const padding = 48;
+    const xs = settled.map((node) => node.x ?? 0);
+    const ys = settled.map((node) => node.y ?? 0);
+    const minX = Math.min(...xs) - padding;
+    const maxX = Math.max(...xs) + padding;
+    const minY = Math.min(...ys) - padding;
+    const maxY = Math.max(...ys) + padding;
+
+    const k = clamp(
+      Math.min(
+        WIDTH / Math.max(1, maxX - minX),
+        HEIGHT / Math.max(1, maxY - minY),
+      ),
+      0.4,
+      2,
+    );
+    setTransform({
+      k,
+      x: WIDTH / 2 - ((minX + maxX) / 2) * k,
+      y: HEIGHT / 2 - ((minY + maxY) / 2) * k,
+    });
+  }, []);
+
+  // Build & run the force simulation whenever the graph's shape changes.
+  useEffect(() => {
+    const { objects, connections } = dataRef.current;
     const ids = new Set(objects.map((o) => o.id));
     const degree = new Map<string, number>();
     for (const c of connections) {
@@ -104,7 +198,12 @@ export function GraphView({
     });
     const links: GLink[] = connections
       .filter((c) => ids.has(c.fromId) && ids.has(c.toId))
-      .map((c) => ({ id: c.id, source: c.fromId, target: c.toId, label: c.label }));
+      .map((c) => ({
+        id: c.id,
+        source: c.fromId,
+        target: c.toId,
+        label: c.label,
+      }));
 
     nodesRef.current = nodes;
 
@@ -118,26 +217,83 @@ export function GraphView({
       )
       .force("charge", forceManyBody<GNode>().strength(-220))
       .force("center", forceCenter(WIDTH / 2, HEIGHT / 2))
-      .force("collide", forceCollide<GNode>().radius((d) => 10 + d.degree * 2))
-      .on("tick", () => setFrame({ nodes: [...nodes], links }));
+      .force(
+        "collide",
+        forceCollide<GNode>().radius((d) => collisionRadius(d.degree)),
+      )
+      // `forceCenter` only translates the centre of mass; it exerts no pull on
+      // any individual node. Without these, an object with no connections is
+      // pushed outward by charge and nothing ever pushes back, so a palace with
+      // a few unlinked notes settled into a scatter spanning several screens.
+      .force("gatherX", forceX<GNode>(WIDTH / 2).strength(0.06))
+      .force("gatherY", forceY<GNode>(HEIGHT / 2).strength(0.06))
+      // Coalesced to one state update per animation frame. d3 ticks faster
+      // than the browser paints, so a setState per tick re-rendered every node
+      // and link several times for a single visible frame.
+      .on("tick", () => {
+        if (rafRef.current !== null) return;
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = null;
+          setFrame({ nodes: [...nodes], links });
+        });
+      });
 
     simRef.current = sim;
 
     // Pre-settle the layout synchronously (independent of requestAnimationFrame,
     // which can be suspended in background tabs) so the graph paints immediately.
     // The live tick handler above still drives animation while a node is dragged.
+    // Scaled to the node count: a six-object palace does not need 300 ticks,
+    // and a large one should not pay for them on the main thread.
+    //
+    // With motion allowed, only most of that work happens up front and the
+    // last of it plays out on screen: the graph arrives nearly arranged and
+    // visibly finds its shape, which reads as a map assembling itself rather
+    // than a diagram that was always there. Under reduced motion it is fully
+    // settled before the first paint and never moves.
+    const reduced = prefersReducedMotion();
     sim.stop();
-    for (let i = 0; i < 300; i += 1) sim.tick();
+    const settled = Math.min(300, 60 + nodes.length * 4);
+    const preTicks = reduced ? settled : Math.round(settled * 0.65);
+    for (let i = 0; i < preTicks; i += 1) sim.tick();
 
     // Seed via a timer so we never call setState synchronously in the effect body.
-    const seed = setTimeout(() => setFrame({ nodes: [...nodes], links }), 0);
+    const seed = setTimeout(() => {
+      setFrame({ nodes: [...nodes], links });
+      fitToView();
+    }, 0);
+
+    if (!reduced) {
+      // Decays to rest in roughly a second; d3's default would take four.
+      sim.alphaDecay(0.08).alpha(0.25).restart();
+      // Re-framed once the layout stops moving, not on every later restart —
+      // refitting after each node drag would yank the view around.
+      let framed = false;
+      sim.on("end", () => {
+        if (framed) return;
+        framed = true;
+        fitToView();
+      });
+    }
     return () => {
       clearTimeout(seed);
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
       sim.stop();
     };
-  }, [objects, connections]);
+  }, [graphKey, fitToView]);
 
   const { nodes, links } = frame;
+
+  /**
+   * The nodes whose names stay on screen without hovering.
+   *
+   * A graph where nothing is named until you point at it is decoration; naming
+   * everything is noise. The hubs are what let a reader orient.
+   */
+  const hubs = useMemo(() => hubIds(nodes, hubCount(nodes.length)), [nodes]);
 
   const screenToSim = (clientX: number, clientY: number) => {
     const svg = svgRef.current;
@@ -145,7 +301,10 @@ export function GraphView({
     const ctm = svg.getScreenCTM();
     if (!ctm) return { x: 0, y: 0 };
     const pt = new DOMPoint(clientX, clientY).matrixTransform(ctm.inverse());
-    return { x: (pt.x - transform.x) / transform.k, y: (pt.y - transform.y) / transform.k };
+    return {
+      x: (pt.x - transform.x) / transform.k,
+      y: (pt.y - transform.y) / transform.k,
+    };
   };
 
   // --- Node dragging ---
@@ -197,22 +356,40 @@ export function GraphView({
   const onBgPointerUp = () => {
     roamRef.current = null;
   };
-  const onWheel = (e: React.WheelEvent) => {
+  /**
+   * Zoom is bound to Ctrl/Cmd + wheel, the platform convention; a plain wheel
+   * scrolls the page as it does everywhere else.
+   *
+   * Attached natively because React registers `wheel` passively at the root,
+   * where `preventDefault()` is silently ignored — so the old handler zoomed
+   * the graph *and* scrolled the page past it at the same time.
+   */
+  useEffect(() => {
     const svg = svgRef.current;
     if (!svg) return;
-    const ctm = svg.getScreenCTM();
-    if (!ctm) return;
-    const pt = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse());
-    const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
-    setTransform((t) => {
-      const k = clamp(t.k * factor, 0.4, 3);
-      return {
-        k,
-        x: pt.x - ((pt.x - t.x) / t.k) * k,
-        y: pt.y - ((pt.y - t.y) / t.k) * k,
-      };
-    });
-  };
+
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      const ctm = svg.getScreenCTM();
+      if (!ctm) return;
+      const pt = new DOMPoint(e.clientX, e.clientY).matrixTransform(
+        ctm.inverse(),
+      );
+      const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+      setTransform((t) => {
+        const k = clamp(t.k * factor, 0.4, 3);
+        return {
+          k,
+          x: pt.x - ((pt.x - t.x) / t.k) * k,
+          y: pt.y - ((pt.y - t.y) / t.k) * k,
+        };
+      });
+    };
+
+    svg.addEventListener("wheel", onWheel, { passive: false });
+    return () => svg.removeEventListener("wheel", onWheel);
+  }, []);
 
   const toggleRoom = (roomId: string) =>
     setFocusRooms((prev) => {
@@ -222,9 +399,38 @@ export function GraphView({
       return next;
     });
 
-  const nodeById = new Map(nodes.map((n) => [n.id, n]));
-  const activeSet = hovered
-    ? new Set<string>([hovered, ...(neighbors.get(hovered) ?? [])])
+  const nodeById = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
+
+  /**
+   * Traversal order for the keyboard, grouped by room then title.
+   *
+   * Deliberately not the simulation's node order: that is seeded randomly, so
+   * "next node" would mean something different on every visit.
+   */
+  const orderedIds = useMemo(
+    () =>
+      [...nodes]
+        .sort((a, b) => {
+          const roomA = roomById.get(a.roomId)?.name ?? "";
+          const roomB = roomById.get(b.roomId)?.name ?? "";
+          return (
+            roomA.localeCompare(roomB) ||
+            (titleById.get(a.id) ?? "").localeCompare(titleById.get(b.id) ?? "")
+          );
+        })
+        .map((n) => n.id),
+    [nodes, roomById, titleById],
+  );
+
+  /**
+   * The node under the pointer *or* under the keyboard cursor.
+   *
+   * Merged deliberately: neighbour highlighting and dimming used to be
+   * mouse-only, so a keyboard user got no equivalent of hovering.
+   */
+  const activeId = cursorId ?? hovered;
+  const activeSet = activeId
+    ? new Set<string>([activeId, ...(neighbors.get(activeId) ?? [])])
     : null;
 
   const isDimmed = (node: GNode): boolean => {
@@ -232,6 +438,134 @@ export function GraphView({
     if (activeSet && !activeSet.has(node.id)) return true;
     return false;
   };
+
+  /** Centres the view on a node, mirroring what hover gives a sighted user. */
+  const centreOn = useCallback((node: GNode | undefined) => {
+    if (!node || node.x === undefined || node.y === undefined) return;
+    setTransform((t) => ({
+      ...t,
+      x: WIDTH / 2 - node.x! * t.k,
+      y: HEIGHT / 2 - node.y! * t.k,
+    }));
+  }, []);
+
+  const moveCursor = useCallback(
+    (delta: number) => {
+      if (orderedIds.length === 0) return;
+      const current = cursorId ? orderedIds.indexOf(cursorId) : -1;
+      const next =
+        (((current + delta) % orderedIds.length) + orderedIds.length) %
+        orderedIds.length;
+      const id = orderedIds[next];
+      setCursorId(id);
+      centreOn(nodeById.get(id));
+    },
+    [orderedIds, cursorId, nodeById, centreOn],
+  );
+
+  /** Steps around the neighbours of the node the cursor is on. */
+  const moveToNeighbour = useCallback(
+    (delta: number) => {
+      if (!cursorId) return moveCursor(delta);
+      const around = [...(neighbors.get(cursorId) ?? [])].sort((a, b) =>
+        (titleById.get(a) ?? "").localeCompare(titleById.get(b) ?? ""),
+      );
+      if (around.length === 0) return;
+      const current = around.indexOf(neighbourCursor ?? "");
+      const next =
+        (((current + delta) % around.length) + around.length) % around.length;
+      const id = around[next];
+      setNeighbourCursor(id);
+      setCursorId(id);
+      centreOn(nodeById.get(id));
+    },
+    [
+      cursorId,
+      neighbors,
+      titleById,
+      neighbourCursor,
+      nodeById,
+      centreOn,
+      moveCursor,
+    ],
+  );
+
+  const zoomBy = useCallback((factor: number) => {
+    setTransform((t) => {
+      const k = clamp(t.k * factor, 0.4, 3);
+      const cx = WIDTH / 2;
+      const cy = HEIGHT / 2;
+      return {
+        k,
+        x: cx - ((cx - t.x) / t.k) * k,
+        y: cy - ((cy - t.y) / t.k) * k,
+      };
+    });
+  }, []);
+
+  const onSvgKeyDown = (event: React.KeyboardEvent) => {
+    const pan = event.shiftKey ? 80 : 0;
+    switch (event.key) {
+      case "ArrowRight":
+        event.preventDefault();
+        if (pan) setTransform((t) => ({ ...t, x: t.x - pan }));
+        else moveCursor(1);
+        break;
+      case "ArrowLeft":
+        event.preventDefault();
+        if (pan) setTransform((t) => ({ ...t, x: t.x + pan }));
+        else moveCursor(-1);
+        break;
+      case "ArrowDown":
+        event.preventDefault();
+        if (pan) setTransform((t) => ({ ...t, y: t.y - pan }));
+        else moveToNeighbour(1);
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        if (pan) setTransform((t) => ({ ...t, y: t.y + pan }));
+        else moveToNeighbour(-1);
+        break;
+      case "Enter":
+      case " ":
+        if (!cursorId) break;
+        event.preventDefault();
+        openObject(cursorId);
+        break;
+      case "Escape":
+        setCursorId(null);
+        setNeighbourCursor(null);
+        break;
+      case "+":
+      case "=":
+        event.preventDefault();
+        zoomBy(1.2);
+        break;
+      case "-":
+        event.preventDefault();
+        zoomBy(1 / 1.2);
+        break;
+      case "0":
+        event.preventDefault();
+        fitToView();
+        break;
+      default:
+        break;
+    }
+  };
+
+  /** What the live region reads out as the cursor moves. */
+  const cursorAnnouncement = (() => {
+    if (!cursorId) return "";
+    const node = nodeById.get(cursorId);
+    if (!node) return "";
+    const position = orderedIds.indexOf(cursorId) + 1;
+    const room = roomById.get(node.roomId)?.name ?? "Unassigned";
+    const links = node.degree;
+    return `${titleById.get(cursorId) ?? node.title}. ${room}. ${links} ${
+      links === 1 ? "connection" : "connections"
+    }. Node ${position} of ${orderedIds.length}.`;
+  })();
 
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
@@ -243,15 +577,29 @@ export function GraphView({
           onPointerDown={onBgPointerDown}
           onPointerMove={onBgPointerMove}
           onPointerUp={onBgPointerUp}
-          onWheel={onWheel}
-          role="application"
+          onKeyDown={onSvgKeyDown}
+          onBlur={() => setNeighbourCursor(null)}
+          tabIndex={0}
+          role="listbox"
           aria-label="Knowledge graph"
+          aria-describedby={helpId}
+          aria-activedescendant={
+            cursorId ? `${nodeIdPrefix}-${cursorId}` : undefined
+          }
         >
-          <g transform={`translate(${transform.x},${transform.y}) scale(${transform.k})`}>
+          <g
+            transform={`translate(${transform.x},${transform.y}) scale(${transform.k})`}
+          >
             {/* Links */}
             {links.map((link) => {
-              const s = typeof link.source === "object" ? (link.source as GNode) : nodeById.get(String(link.source));
-              const t = typeof link.target === "object" ? (link.target as GNode) : nodeById.get(String(link.target));
+              const s =
+                typeof link.source === "object"
+                  ? (link.source as GNode)
+                  : nodeById.get(String(link.source));
+              const t =
+                typeof link.target === "object"
+                  ? (link.target as GNode)
+                  : nodeById.get(String(link.target));
               if (!s || !t) return null;
               const dim =
                 (activeSet && !(activeSet.has(s.id) && activeSet.has(t.id))) ||
@@ -261,13 +609,19 @@ export function GraphView({
                 hovered && (s.id === hovered || t.id === hovered);
               return (
                 <g key={link.id}>
-                  <line
-                    x1={s.x}
-                    y1={s.y}
-                    x2={t.x}
-                    y2={t.y}
+                  {/* Curved, using the same helper as the room canvas: with
+                      several links between the same cluster, straight chords
+                      collapse into an unreadable star. */}
+                  <path
+                    d={linkPath(
+                      { x: s.x ?? 0, y: s.y ?? 0 },
+                      { x: t.x ?? 0, y: t.y ?? 0 },
+                      0.09,
+                    )}
+                    fill="none"
                     stroke="var(--palace-border-strong)"
                     strokeWidth={isHoverLink ? 1.6 : 1}
+                    strokeLinecap="round"
                     opacity={dim ? 0.08 : 0.5}
                   />
                   {isHoverLink && link.label ? (
@@ -287,36 +641,74 @@ export function GraphView({
             {/* Nodes */}
             {nodes.map((node) => {
               const room = roomById.get(node.roomId);
-              const color = room ? paletteColor(room.palette) : "var(--palace-muted)";
-              const r = 6 + node.degree * 2;
+              const color = room
+                ? paletteColor(room.palette)
+                : "var(--palace-muted)";
+              const r = nodeRadius(node.degree);
               const dim = isDimmed(node);
               const unconnected = node.degree === 0;
               return (
                 <g
                   key={node.id}
+                  id={`${nodeIdPrefix}-${node.id}`}
+                  role="option"
+                  aria-selected={cursorId === node.id}
+                  aria-label={`${titleById.get(node.id) ?? node.title}, ${
+                    roomById.get(node.roomId)?.name ?? "Unassigned"
+                  }, ${node.degree} ${
+                    node.degree === 1 ? "connection" : "connections"
+                  }`}
                   transform={`translate(${node.x},${node.y})`}
                   className="cursor-pointer"
                   onPointerDown={(e) => onNodePointerDown(e, node)}
                   onPointerMove={(e) => onNodePointerMove(e, node)}
                   onPointerUp={(e) => onNodePointerUp(e, node)}
                   onMouseEnter={() => setHovered(node.id)}
-                  onMouseLeave={() => setHovered((h) => (h === node.id ? null : h))}
+                  onMouseLeave={() =>
+                    setHovered((h) => (h === node.id ? null : h))
+                  }
                   opacity={dim ? 0.18 : unconnected ? 0.55 : 1}
                 >
+                  {/* Hubs cast a soft halo, so weight reads before you can
+                      count the lines meeting at a node. */}
+                  {hubs.has(node.id) ? (
+                    <circle r={r * 2.4} fill={color} opacity={0.1} />
+                  ) : null}
+                  {/* A second ring marks the keyboard cursor distinctly from hover. */}
+                  {cursorId === node.id ? (
+                    <circle
+                      r={r + 5}
+                      fill="none"
+                      stroke="var(--palace-accent)"
+                      strokeWidth={2}
+                    />
+                  ) : null}
                   <circle
                     r={r}
                     fill={color}
-                    stroke={hovered === node.id ? "var(--palace-text)" : "var(--palace-base)"}
-                    strokeWidth={hovered === node.id ? 2 : 1.5}
+                    stroke={
+                      activeId === node.id
+                        ? "var(--palace-text)"
+                        : "var(--palace-base)"
+                    }
+                    strokeWidth={activeId === node.id ? 2 : 1.5}
                   />
-                  {hovered === node.id ? (
+                  {activeId === node.id || hubs.has(node.id) ? (
                     <text
                       x={r + 5}
                       y={4}
-                      className="fill-[var(--palace-text)] text-[11px]"
-                      style={{ paintOrder: "stroke", stroke: "var(--palace-base)", strokeWidth: 3 }}
+                      className={
+                        activeId === node.id
+                          ? "fill-[var(--palace-text)] text-[11px]"
+                          : "fill-[var(--palace-muted)] text-[10px]"
+                      }
+                      style={{
+                        paintOrder: "stroke",
+                        stroke: "var(--palace-base)",
+                        strokeWidth: 3,
+                      }}
                     >
-                      {node.title}
+                      {titleById.get(node.id) ?? node.title}
                     </text>
                   ) : null}
                 </g>
@@ -325,14 +717,53 @@ export function GraphView({
           </g>
         </svg>
 
-        <div className="pointer-events-none absolute bottom-3 left-3 text-[11px] text-muted">
-          Scroll to zoom · drag background to pan · drag a node to move
+        {/* Visible controls: useful to mouse, touch and keyboard alike. */}
+        <div className="absolute right-3 bottom-3 flex flex-col gap-1 rounded-lg border border-border-hair bg-surface/90 p-1 backdrop-blur">
+          <button
+            type="button"
+            onClick={() => zoomBy(1.2)}
+            aria-label="Zoom in"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-text"
+          >
+            <Plus size={15} strokeWidth={1.75} aria-hidden />
+          </button>
+          <button
+            type="button"
+            onClick={() => zoomBy(1 / 1.2)}
+            aria-label="Zoom out"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-text"
+          >
+            <Minus size={15} strokeWidth={1.75} aria-hidden />
+          </button>
+          <button
+            type="button"
+            onClick={fitToView}
+            aria-label="Fit everything on screen"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-text"
+          >
+            <Maximize size={14} strokeWidth={1.75} aria-hidden />
+          </button>
         </div>
+
+        <p
+          id={helpId}
+          className="pointer-events-none absolute bottom-3 left-3 max-w-[70%] text-[11px] text-muted"
+        >
+          Ctrl and scroll to zoom · drag to pan · focus the graph and use arrow
+          keys to walk between objects, Enter to open
+        </p>
+
+        {/* Reads the cursor node out as it moves. */}
+        <span aria-live="polite" className="sr-only">
+          {cursorAnnouncement}
+        </span>
       </div>
 
       {/* Legend */}
       <aside className="w-full shrink-0 lg:w-56">
-        <h2 className="mb-3 font-display text-lg tracking-wide text-text">Rooms</h2>
+        <h2 className="mb-3 font-display text-lg tracking-wide text-text">
+          Rooms
+        </h2>
         <ul className="space-y-1">
           {rooms.map((room) => {
             const color = paletteColor(room.palette);
@@ -345,7 +776,9 @@ export function GraphView({
                   onClick={() => toggleRoom(room.id)}
                   aria-pressed={active}
                   className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors ${
-                    active ? "bg-surface-2 text-text" : "text-muted hover:bg-surface-2/60 hover:text-text"
+                    active
+                      ? "bg-surface-2 text-text"
+                      : "text-muted hover:bg-surface-2/60 hover:text-text"
                   }`}
                 >
                   <span

@@ -20,7 +20,7 @@ export function Switch({
       className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors duration-200 ${
         checked
           ? "border-accent-dim bg-accent/25"
-          : "border-border-strong bg-surface-2"
+          : "border-border-control bg-surface-2"
       }`}
     >
       <span

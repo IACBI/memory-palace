@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef } from "react";
+import { useId } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
-
-const FOCUSABLE =
-  'a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
+import { useFocusTrap } from "@/lib/hooks/use-focus-trap";
+import { useDismissable } from "@/lib/hooks/use-dismissable";
 
 export function Dialog({
   open,
@@ -14,6 +13,7 @@ export function Dialog({
   description,
   children,
   footer,
+  size = "md",
 }: {
   open: boolean;
   onClose: () => void;
@@ -21,61 +21,20 @@ export function Dialog({
   description?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  /** `lg` is for reference content; prompts and confirmations stay `md`. */
+  size?: "md" | "lg";
 }) {
-  const panelRef = useRef<HTMLDivElement>(null);
-  const previouslyFocused = useRef<HTMLElement | null>(null);
   const titleId = useId();
   const descId = useId();
-
-  const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.stopPropagation();
-        onClose();
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const panel = panelRef.current;
-      if (!panel) return;
-      const focusable = Array.from(
-        panel.querySelectorAll<HTMLElement>(FOCUSABLE),
-      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      const active = document.activeElement;
-      if (event.shiftKey && active === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && active === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    },
-    [onClose],
-  );
-
-  useEffect(() => {
-    if (!open) return;
-    previouslyFocused.current = document.activeElement as HTMLElement | null;
-    const panel = panelRef.current;
-    const firstField = panel?.querySelector<HTMLElement>(FOCUSABLE);
-    firstField?.focus();
-    const previous = previouslyFocused.current;
-    return () => {
-      previous?.focus?.();
-    };
-  }, [open]);
+  const panelRef = useFocusTrap<HTMLDivElement>(open);
+  useDismissable(open, onClose);
 
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      onKeyDown={handleKeyDown}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="motion-fade-in absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden
       />
@@ -85,7 +44,9 @@ export function Dialog({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descId : undefined}
-        className="animate-[dialogIn_180ms_ease-out] relative z-10 w-full max-w-md rounded-2xl border border-border-strong bg-surface p-6 shadow-[0_24px_80px_-12px_rgba(0,0,0,0.7)]"
+        className={`motion-dialog-in relative z-10 w-full rounded-2xl border border-border-strong bg-surface p-6 shadow-[0_24px_80px_-12px_rgba(0,0,0,0.7)] ${
+          size === "lg" ? "max-w-2xl" : "max-w-md"
+        }`}
       >
         <button
           type="button"
@@ -95,7 +56,10 @@ export function Dialog({
         >
           <X size={16} strokeWidth={1.75} />
         </button>
-        <h2 id={titleId} className="font-display text-2xl tracking-wide text-text">
+        <h2
+          id={titleId}
+          className="font-display text-2xl tracking-wide text-text"
+        >
           {title}
         </h2>
         {description ? (
@@ -103,8 +67,22 @@ export function Dialog({
             {description}
           </p>
         ) : null}
-        <div className="mt-5">{children}</div>
-        {footer ? <div className="mt-6 flex justify-end gap-3">{footer}</div> : null}
+        {/* Reference-sized dialogs can outgrow a short viewport; the body
+            scrolls so the title and close button stay put.
+            A scrollable region whose content is all static text has no way in
+            from the keyboard, so it becomes a tab stop of its own — otherwise
+            anything below the fold is mouse-only. */}
+        <div
+          className={`mt-5 ${size === "lg" ? "max-h-[65vh] overflow-y-auto pr-1" : ""}`}
+          {...(size === "lg"
+            ? { tabIndex: 0, role: "group", "aria-labelledby": titleId }
+            : {})}
+        >
+          {children}
+        </div>
+        {footer ? (
+          <div className="mt-6 flex justify-end gap-3">{footer}</div>
+        ) : null}
       </div>
     </div>,
     document.body,

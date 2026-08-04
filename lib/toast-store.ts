@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { newId } from "@/lib/id";
 
 export type ToastVariant = "default" | "success" | "error";
 
@@ -34,7 +35,7 @@ const DEFAULT_DURATION = 4000;
 export const useToastStore = create<ToastState>((set) => ({
   toasts: [],
   addToast: (input) => {
-    const id = crypto.randomUUID();
+    const id = newId();
     const toast: Toast = {
       id,
       message: input.message,
@@ -46,7 +47,9 @@ export const useToastStore = create<ToastState>((set) => ({
     return id;
   },
   dismissToast: (id) =>
-    set((state) => ({ toasts: state.toasts.filter((toast) => toast.id !== id) })),
+    set((state) => ({
+      toasts: state.toasts.filter((toast) => toast.id !== id),
+    })),
 }));
 
 /** Convenience helper usable outside React. */

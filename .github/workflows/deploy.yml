@@ -16,7 +16,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # The demo must never deploy from a red tree.
+  ci:
+    uses: ./.github/workflows/ci.yml
+
   build:
+    needs: ci
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,7 +30,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Configure GitHub Pages
@@ -37,9 +42,7 @@ jobs:
         run: npm ci
 
       - name: Build static export
-        run: npm run build
-        env:
-          GITHUB_PAGES: "true"
+        run: npm run build:export
 
       - name: Disable Jekyll processing
         run: touch out/.nojekyll

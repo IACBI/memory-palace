@@ -4,7 +4,7 @@ import { forwardRef } from "react";
 import { ChevronDown } from "lucide-react";
 
 const SELECT_CLASS =
-  "w-full appearance-none rounded-lg border border-border-hair bg-surface px-3 py-2 pr-9 text-sm text-text transition-colors duration-200 focus:border-accent-dim focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1";
+  "w-full appearance-none rounded-lg border border-border-control bg-surface px-3 py-2 pr-9 text-sm text-text transition-colors duration-200 focus:border-accent-dim focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1";
 
 export const Select = forwardRef<
   HTMLSelectElement,

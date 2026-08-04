@@ -15,6 +15,13 @@
   --palace-border: rgba(232, 227, 216, 0.08);
   --palace-border-strong: rgba(232, 227, 216, 0.14);
 
+  /* Form-control boundaries only. The hairlines above are decorative dividers,
+     which WCAG 1.4.11 does not cover; the visible edge of an input, select or
+     switch is a UI component boundary and needs 3:1. Raising the hairline
+     itself would flatten the whole atmosphere for no accessibility gain.
+     rgba(232,227,216,0.38) over --palace-surface computes to 3.05:1. */
+  --palace-border-control: rgba(232, 227, 216, 0.38);
+
   /* Text */
   --palace-text: #e8e3d8;
   --palace-muted: #9a917f;
@@ -26,19 +33,89 @@
   /* The soft candle-glow cast by accent surfaces (buttons, hovered cards). */
   --palace-accent-glow: rgba(201, 162, 39, 0.5);
 
+  /* Label colour for text sitting on an accent fill. Every accent above is
+     contrast-checked against this value at WCAG AA. */
+  --palace-on-accent: #1a1410;
+
   /* Danger — a legible brick-rose for destructive text/icons (deep oxblood
      stays for fills and room tints, where contrast isn't a factor). ~6.5:1. */
   --palace-danger: #d18b82;
 
-  /* Six room palette accents (muted, desaturated) */
+  /*
+   * Six room palette accents: muted and desaturated, but each light enough to
+   * carry an icon glyph at WCAG 1.4.11's 3:1 against every surface it can sit
+   * on. Four of them used to sit between 2.1:1 and 2.7:1, which made the room
+   * glyphs genuinely hard to make out on the darkest cards. They are lifted by
+   * the smallest amount that clears the bar, so the palette still reads as
+   * candlelit rather than neon. Verified in test/lib/contrast.test.ts.
+   */
   --palette-brass: #c9a227;
-  --palette-oxblood: #7d3b3b;
-  --palette-forest: #4a6350;
-  --palette-ink: #48566b;
-  --palette-plum: #6e4a63;
+  --palette-oxblood: #935c5c;
+  --palette-forest: #59705f;
+  --palette-ink: #606c7e;
+  --palette-plum: #816277;
   --palette-umber: #8a6a45;
 
   --palace-selection: rgba(201, 162, 39, 0.28);
+
+  /* Motion. Durations pair with an easing: things arriving decelerate, things
+     leaving accelerate and take roughly half the time. */
+  --duration-instant: 80ms;
+  --duration-quick: 140ms;
+  --duration-base: 200ms;
+  --duration-slow: 280ms;
+  --ease-out-quiet: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  /* How far a surface travels, by its size. Zeroed under reduced motion. */
+  --motion-distance-sm: 6px;
+  --motion-distance-md: 8px;
+  --motion-distance-lg: 10px;
+  --motion-distance-full: 100%;
+}
+
+/*
+ * Parchment — the light theme.
+ *
+ * Not an inversion. The palace's identity is candlelight on near-black, and
+ * flipping its lightness channel gives grey-on-white with none of it. This is
+ * warm paper and brown ink: the same room palettes darkened until they read
+ * against a light ground, glows traded for shadows, grain kept but lighter.
+ *
+ * Every pairing here is checked by `test/lib/contrast.test.ts`, which computes
+ * the ratios from these very declarations.
+ */
+:root[data-theme="parchment"] {
+  --palace-base: #efe8da;
+  --palace-surface: #f9f4ea;
+  --palace-surface-2: #e9e1d1;
+
+  --palace-border: rgba(58, 46, 30, 0.1);
+  --palace-border-strong: rgba(58, 46, 30, 0.18);
+  --palace-border-control: rgba(58, 46, 30, 0.55);
+
+  --palace-text: #2a2318;
+  --palace-muted: #5d5342;
+
+  --palace-accent: #7a5c10;
+  --palace-accent-hover: #5f4708;
+  --palace-accent-dim: #a08a4a;
+  /* A cast shadow rather than a glow: light surfaces do not emit. */
+  --palace-accent-glow: rgba(58, 46, 30, 0.22);
+
+  /* Inverted with the accent — paper on ink, not ink on ink. */
+  --palace-on-accent: #f9f4ea;
+
+  --palace-danger: #8f2f24;
+
+  /* The same six rooms, darkened until each carries against paper. */
+  --palette-brass: #7a5c10;
+  --palette-oxblood: #7d2f2f;
+  --palette-forest: #33523d;
+  --palette-ink: #33435c;
+  --palette-plum: #5a3450;
+  --palette-umber: #6d4c22;
+
+  --palace-selection: rgba(122, 92, 16, 0.24);
 }
 
 /*
@@ -70,6 +147,34 @@
   --palace-selection: rgba(170, 182, 198, 0.26);
 }
 
+/*
+ * The same four accents, darkened for paper.
+ *
+ * On the dark theme an accent is a light fill carrying dark text; here it is
+ * a dark fill carrying paper-coloured text, so the luminance has to move the
+ * other way. Higher specificity than the blocks above, so order is irrelevant.
+ */
+:root[data-theme="parchment"][data-accent="copper"] {
+  --palace-accent: #8a4a17;
+  --palace-accent-hover: #6d3a11;
+  --palace-accent-dim: #b5825a;
+  --palace-selection: rgba(138, 74, 23, 0.22);
+}
+
+:root[data-theme="parchment"][data-accent="sage"] {
+  --palace-accent: #465730;
+  --palace-accent-hover: #354424;
+  --palace-accent-dim: #869670;
+  --palace-selection: rgba(70, 87, 48, 0.22);
+}
+
+:root[data-theme="parchment"][data-accent="slate"] {
+  --palace-accent: #3c4859;
+  --palace-accent-hover: #2e3846;
+  --palace-accent-dim: #7a8698;
+  --palace-selection: rgba(60, 72, 89, 0.22);
+}
+
 /* Reading size — scales everything expressed in rem. Medium (16px) is the
    default and needs no attribute. */
 :root[data-text-size="small"] {
@@ -87,6 +192,7 @@
 
   --color-border-hair: var(--palace-border);
   --color-border-strong: var(--palace-border-strong);
+  --color-border-control: var(--palace-border-control);
 
   --color-text: var(--palace-text);
   --color-muted: var(--palace-muted);
@@ -95,6 +201,7 @@
   --color-accent-hover: var(--palace-accent-hover);
   --color-accent-dim: var(--palace-accent-dim);
 
+  --color-on-accent: var(--palace-on-accent);
   --color-danger: var(--palace-danger);
 
   --color-brass: var(--palette-brass);
@@ -110,6 +217,12 @@
 
 html {
   color-scheme: dark;
+}
+
+/* Higher specificity than the rule above, so form controls, scrollbars and
+   the canvas the browser paints outside the app all follow the theme. */
+:root[data-theme="parchment"] {
+  color-scheme: light;
 }
 
 body {
@@ -160,6 +273,11 @@ body {
   background-clip: padding-box;
 }
 
+:root[data-theme="parchment"] *::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(58, 46, 30, 0.3);
+  background-clip: padding-box;
+}
+
 /* Atmospheric floor-plan surface: warm base + vignette + faint grain */
 .palace-floor {
   background-color: #17140f;
@@ -178,16 +296,56 @@ body {
   box-shadow: inset 0 0 120px 20px rgba(0, 0, 0, 0.45);
 }
 
+/*
+ * The floor plan on paper: the vignette becomes a soft edge shadow rather than
+ * a black well, and the grain drops to a third of its strength — the same
+ * amount of noise that reads as candlelit texture on near-black reads as a
+ * dirty screen on a light ground.
+ */
+:root[data-theme="parchment"] .palace-floor {
+  background-color: #eae2d2;
+  background-image:
+    radial-gradient(
+      120% 100% at 50% 0%,
+      rgba(122, 92, 16, 0.07),
+      transparent 60%
+    ),
+    radial-gradient(
+      140% 120% at 50% 120%,
+      rgba(58, 46, 30, 0.12),
+      transparent 55%
+    ),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.012'/%3E%3C/svg%3E");
+  box-shadow: inset 0 0 90px 10px rgba(58, 46, 30, 0.1);
+}
+
 /* Room detail canvas: subtle grain overlay on top of palette tint */
 .room-canvas-grain {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
 }
 
-/* Motion — restrained entrances (150–250ms) */
+/*
+ * Motion system.
+ *
+ * Surfaces name the role they play (`motion-dialog-in`) rather than reaching
+ * for a keyframe and a duration, so the timing of the whole app is set here.
+ * Travel distance scales with the size of the surface: a toast slides 10px, a
+ * dialog 8px, a slide-over its full width.
+ *
+ * The `--motion-distance-*` variables are the single lever reduced motion
+ * pulls. Collapsing them removes movement while leaving opacity and colour
+ * feedback intact — "less movement", not "no feedback", which is what the
+ * previous blanket `animation-duration: 0.001ms` override produced.
+ *
+ * Exits are entrances-only for now: driving an exit needs the surface to stay
+ * mounted after it closes, and the render-phase state update that requires did
+ * not survive a production build — dialogs stopped opening at all. Left out
+ * rather than shipped flaky.
+ */
 @keyframes dialogIn {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.98);
+    transform: translateY(var(--motion-distance-md)) scale(0.98);
   }
   to {
     opacity: 1;
@@ -198,7 +356,7 @@ body {
 @keyframes toastIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(var(--motion-distance-lg));
   }
   to {
     opacity: 1;
@@ -208,7 +366,7 @@ body {
 
 @keyframes slideOverIn {
   from {
-    transform: translateX(100%);
+    transform: translateX(var(--motion-distance-full));
   }
   to {
     transform: translateX(0);
@@ -228,7 +386,7 @@ body {
 @keyframes pageIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(var(--motion-distance-sm));
   }
   to {
     opacity: 1;
@@ -237,26 +395,54 @@ body {
 }
 
 .page-enter {
-  animation: pageIn 240ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  animation: pageIn var(--duration-base) var(--ease-out-quiet);
 }
 
-/* Respect reduced-motion globally — via OS preference or the in-app toggle */
+/* Named entrances, so components ask for a role rather than a keyframe. */
+.motion-dialog-in {
+  animation: dialogIn var(--duration-slow) var(--ease-out-quiet);
+}
+.motion-toast-in {
+  animation: toastIn var(--duration-base) var(--ease-out-quiet);
+}
+.motion-slide-over-in {
+  animation: slideOverIn var(--duration-slow) var(--ease-out-quiet);
+}
+.motion-fade-in {
+  animation: fadeIn var(--duration-base) var(--ease-out-quiet);
+}
+.motion-menu-in {
+  animation: dialogIn var(--duration-base) var(--ease-out-quiet);
+}
+
+/*
+ * Reduced motion, via the OS preference or the in-app toggle.
+ *
+ * Movement is removed by collapsing the distance variables; durations stay so
+ * hover and focus feedback still reads as a transition rather than a snap.
+ * Only the long entrances are shortened.
+ */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
+  :root {
+    --motion-distance-sm: 0px;
+    --motion-distance-md: 0px;
+    --motion-distance-lg: 0px;
+    --motion-distance-full: 0px;
+    --duration-slow: var(--duration-quick);
+    --duration-base: var(--duration-quick);
+  }
+
+  * {
     scroll-behavior: auto !important;
   }
 }
 
-:root[data-reduce-motion="true"] *,
-:root[data-reduce-motion="true"] *::before,
-:root[data-reduce-motion="true"] *::after {
-  animation-duration: 0.001ms !important;
-  animation-iteration-count: 1 !important;
-  transition-duration: 0.001ms !important;
-  scroll-behavior: auto !important;
+:root[data-reduce-motion="true"] {
+  --motion-distance-sm: 0px;
+  --motion-distance-md: 0px;
+  --motion-distance-lg: 0px;
+  --motion-distance-full: 0px;
+  --duration-slow: var(--duration-quick);
+  --duration-base: var(--duration-quick);
+  scroll-behavior: auto;
 }

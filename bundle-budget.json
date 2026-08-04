@@ -1,0 +1,4 @@
+{
+  "_comment": "First-load gzipped JS for /, enforced by scripts/check-bundle.mjs. Measured at 213,883 B after removing the lucide namespace import; ~10% headroom. Raise deliberately, with a note on what grew.",
+  "firstLoadGzipBytes": 235000
+}

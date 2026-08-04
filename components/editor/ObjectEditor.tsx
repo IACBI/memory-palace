@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useRoomMap } from "@/lib/hooks/use-room-map";
 import {
   X,
   ExternalLink,
@@ -8,6 +9,7 @@ import {
   Trash2,
   Check,
   Link as LinkIcon,
+  ShieldAlert,
 } from "lucide-react";
 import { usePalaceStore } from "@/lib/store";
 import { useToastStore } from "@/lib/toast-store";
@@ -21,9 +23,36 @@ import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { TagInput } from "./TagInput";
 import { RelationshipPicker } from "./RelationshipPicker";
+import { useDebouncedCommit } from "@/lib/hooks/use-debounced-commit";
+import { useDismissable } from "@/lib/hooks/use-dismissable";
+import { useFocusTrap } from "@/lib/hooks/use-focus-trap";
+import { normaliseHref } from "@/lib/storage/url";
 
+/** The free-text fields, buffered locally while the user types. */
+interface TextDraft {
+  title: string;
+  content: string;
+  url: string;
+  fileName: string;
+}
+
+/**
+ * Mounts the editor panel for whichever object is open.
+ *
+ * Keyed by object id so the panel's local draft state is recreated per object
+ * instead of having to be resynchronised.
+ */
 export function ObjectEditor() {
   const activeObjectId = usePalaceStore((s) => s.activeObjectId);
+  const exists = usePalaceStore((s) =>
+    s.objects.some((o) => o.id === s.activeObjectId),
+  );
+
+  if (!activeObjectId || !exists) return null;
+  return <ObjectEditorPanel key={activeObjectId} objectId={activeObjectId} />;
+}
+
+function ObjectEditorPanel({ objectId }: { objectId: string }) {
   const objects = usePalaceStore((s) => s.objects);
   const rooms = usePalaceStore((s) => s.rooms);
   const connections = usePalaceStore((s) => s.connections);
@@ -37,47 +66,99 @@ export function ObjectEditor() {
   const closeObject = usePalaceStore((s) => s.closeObject);
   const addToast = useToastStore((s) => s.addToast);
 
-  const object = objects.find((o) => o.id === activeObjectId) ?? null;
-  const objectId = object?.id ?? null;
+  const object = objects.find((o) => o.id === objectId) ?? null;
 
   const [saved, setSaved] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleRef = useRef<HTMLInputElement>(null);
+  const typeLabelId = useId();
+  const contentId = useId();
+  const urlId = useId();
+  const fileNameId = useId();
+  const tagsLabelId = useId();
+  const roomId = useId();
 
-  // Focus the title shortly after a new object opens.
-  useEffect(() => {
-    if (!objectId) return;
-    const t = setTimeout(() => titleRef.current?.focus(), 60);
-    return () => clearTimeout(t);
-  }, [objectId]);
+  /**
+   * Free-text fields are buffered locally and written on a pause; discrete
+   * ones (type, room, tags, pin) go straight through — they are not
+   * high-frequency and the UI should reflect them at once.
+   */
+  const [draft, setDraft] = useState<TextDraft>(() => ({
+    title: object?.title ?? "",
+    content: object?.content ?? "",
+    url: object?.url ?? "",
+    fileName: object?.fileName ?? "",
+  }));
 
-  // Esc closes the panel.
-  useEffect(() => {
-    if (!objectId) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeObject();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [objectId, closeObject]);
-
-  if (!object) return null;
-
-  const flashSaved = () => {
+  const flashSaved = useCallback(() => {
     setSaved(true);
     if (savedTimer.current) clearTimeout(savedTimer.current);
     savedTimer.current = setTimeout(() => setSaved(false), 1600);
-  };
+  }, []);
+
+  const writeText = useCallback(
+    (value: TextDraft) => {
+      updateObject(objectId, {
+        title: value.title,
+        content: value.content,
+        url: value.url || undefined,
+        fileName: value.fileName || undefined,
+      });
+      flashSaved();
+    },
+    [objectId, updateObject, flashSaved],
+  );
+
+  const text = useDebouncedCommit(writeText);
+
+  // Rebuilt on every keystroke before; now only when the rooms change.
+  const roomById = useRoomMap(rooms);
+
+  const editText = useCallback(
+    (patch: Partial<TextDraft>) => {
+      setDraft((previous) => {
+        const next = { ...previous, ...patch };
+        text.push(next);
+        return next;
+      });
+    },
+    [text],
+  );
+
+  /**
+   * A slide-over that claims `aria-modal` has to behave like one. It had
+   * Escape and an initial focus but no trap and no focus restore, so Tab
+   * walked straight out into the page behind the overlay.
+   */
+  const panelRef = useFocusTrap<HTMLElement>(true, { initialFocus: titleRef });
+
+  // Clearing on unmount: without this a pending flash fires after the panel
+  // has closed and calls setState on an unmounted tree.
+  useEffect(
+    () => () => {
+      if (savedTimer.current) clearTimeout(savedTimer.current);
+    },
+    [],
+  );
+
+  const closePanel = useCallback(() => {
+    text.flush();
+    closeObject();
+  }, [text, closeObject]);
+
+  useDismissable(true, closePanel);
+
+  if (!object) return null;
 
   const commit = (patch: Partial<KnowledgeObject>) => {
     updateObject(object.id, patch);
     flashSaved();
   };
 
+  const safeHref = normaliseHref(draft.url);
   const room = rooms.find((r) => r.id === object.roomId);
   const accent = room ? paletteColor(room.palette) : "var(--palace-accent)";
-  const roomById = new Map(rooms.map((r) => [r.id, r]));
 
   const objectConnections = connections
     .filter((c) => c.fromId === object.id || c.toId === object.id)
@@ -87,7 +168,9 @@ export function ObjectEditor() {
     })
     .filter((entry) => entry.other);
 
-  const connectedIds = new Set(objectConnections.map((entry) => entry.other?.id));
+  const connectedIds = new Set(
+    objectConnections.map((entry) => entry.other?.id),
+  );
   const candidates = objects.filter(
     (o) => o.id !== object.id && !connectedIds.has(o.id),
   );
@@ -113,17 +196,20 @@ export function ObjectEditor() {
     <>
       {/* Backdrop — dims on mobile, click closes everywhere */}
       <div
-        className="animate-[fadeIn_180ms_ease-out] fixed inset-0 z-40 bg-black/50 md:bg-black/20"
-        onClick={closeObject}
+        className="motion-fade-in fixed inset-0 z-40 bg-black/50 md:bg-black/20"
+        onClick={closePanel}
         aria-hidden
       />
 
       <aside
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label={`Edit ${object.title || "object"}`}
-        className="animate-[slideOverIn_220ms_ease-out] fixed top-0 right-0 z-50 flex h-full w-full max-w-[420px] flex-col border-l border-border-strong bg-surface"
-        style={{ boxShadow: `inset 4px 0 0 0 ${accent}, -24px 0 80px -24px rgba(0,0,0,0.8)` }}
+        className="motion-slide-over-in fixed top-0 right-0 z-50 flex h-full w-full max-w-[420px] flex-col border-l border-border-strong bg-surface"
+        style={{
+          boxShadow: `inset 4px 0 0 0 ${accent}, -24px 0 80px -24px rgba(0,0,0,0.8)`,
+        }}
       >
         {/* Header */}
         <div className="flex items-center justify-between gap-2 border-b border-border-hair px-5 py-4">
@@ -151,7 +237,7 @@ export function ObjectEditor() {
           </div>
           <button
             type="button"
-            onClick={closeObject}
+            onClick={closePanel}
             aria-label="Close editor"
             className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-2 hover:text-text"
           >
@@ -164,8 +250,9 @@ export function ObjectEditor() {
           {/* Title */}
           <Input
             ref={titleRef}
-            value={object.title}
-            onChange={(e) => commit({ title: e.target.value })}
+            value={draft.title}
+            onChange={(e) => editText({ title: e.target.value })}
+            onBlur={text.flush}
             placeholder="Untitled"
             className="!text-lg font-display"
             aria-label="Title"
@@ -173,10 +260,17 @@ export function ObjectEditor() {
 
           {/* Type selector */}
           <div>
-            <label className="mb-1.5 block text-xs tracking-widest text-muted uppercase">
+            <span
+              id={typeLabelId}
+              className="mb-1.5 block text-xs tracking-widest text-muted uppercase"
+            >
               Type
-            </label>
-            <div className="grid grid-cols-4 gap-1.5">
+            </span>
+            <div
+              role="group"
+              aria-labelledby={typeLabelId}
+              className="grid grid-cols-4 gap-1.5"
+            >
               {OBJECT_TYPES.map((type) => {
                 const meta = OBJECT_TYPE_META[type];
                 const Glyph = meta.icon;
@@ -203,43 +297,66 @@ export function ObjectEditor() {
 
           {/* Content */}
           <div>
-            <label className="mb-1.5 block text-xs tracking-widest text-muted uppercase">
+            <label
+              htmlFor={contentId}
+              className="mb-1.5 block text-xs tracking-widest text-muted uppercase"
+            >
               Content
             </label>
             <Textarea
+              id={contentId}
               autoGrow
               rows={4}
-              value={object.content}
-              onChange={(e) => commit({ content: e.target.value })}
+              value={draft.content}
+              onChange={(e) => editText({ content: e.target.value })}
+              onBlur={text.flush}
               placeholder="Write something…"
-              aria-label="Content"
             />
           </div>
 
           {/* URL (link type) */}
           {object.type === "link" ? (
             <div>
-              <label className="mb-1.5 block text-xs tracking-widest text-muted uppercase">
+              <label
+                htmlFor={urlId}
+                className="mb-1.5 block text-xs tracking-widest text-muted uppercase"
+              >
                 URL
               </label>
               <Input
-                value={object.url ?? ""}
-                onChange={(e) => commit({ url: e.target.value })}
+                id={urlId}
+                value={draft.url}
+                onChange={(e) => editText({ url: e.target.value })}
+                onBlur={text.flush}
                 placeholder="https://…"
                 inputMode="url"
-                aria-label="URL"
               />
-              {object.url ? (
-                <a
-                  href={object.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-2 flex items-center gap-2 rounded-lg border border-border-hair bg-surface-2/60 px-3 py-2 text-xs text-muted transition-colors hover:text-text"
-                >
-                  <LinkIcon size={13} strokeWidth={1.75} />
-                  <span className="min-w-0 flex-1 truncate">{object.url}</span>
-                  <ExternalLink size={13} strokeWidth={1.75} />
-                </a>
+              {/*
+                Checked again at render, not only when the value is stored: a
+                palace can arrive from an import file, and a link is the one
+                place user data becomes something the browser navigates to.
+              */}
+              {draft.url.trim() ? (
+                safeHref ? (
+                  <a
+                    href={safeHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 flex items-center gap-2 rounded-lg border border-border-hair bg-surface-2/60 px-3 py-2 text-xs text-muted transition-colors hover:text-text"
+                  >
+                    <LinkIcon size={13} strokeWidth={1.75} aria-hidden />
+                    <span className="min-w-0 flex-1 truncate">{safeHref}</span>
+                    <ExternalLink size={13} strokeWidth={1.75} aria-hidden />
+                  </a>
+                ) : (
+                  <p className="mt-2 flex items-center gap-2 rounded-lg border border-danger/40 bg-surface-2/60 px-3 py-2 text-xs text-danger">
+                    <ShieldAlert size={13} strokeWidth={1.75} aria-hidden />
+                    <span className="min-w-0 flex-1">
+                      This address uses a scheme the app won&apos;t open. Use an
+                      http, https or mailto link.
+                    </span>
+                  </p>
+                )
               ) : null}
             </div>
           ) : null}
@@ -247,24 +364,32 @@ export function ObjectEditor() {
           {/* File name (file type) */}
           {object.type === "file" ? (
             <div>
-              <label className="mb-1.5 block text-xs tracking-widest text-muted uppercase">
+              <label
+                htmlFor={fileNameId}
+                className="mb-1.5 block text-xs tracking-widest text-muted uppercase"
+              >
                 File name
               </label>
               <Input
-                value={object.fileName ?? ""}
-                onChange={(e) => commit({ fileName: e.target.value })}
+                id={fileNameId}
+                value={draft.fileName}
+                onChange={(e) => editText({ fileName: e.target.value })}
+                onBlur={text.flush}
                 placeholder="document.pdf"
-                aria-label="File name"
               />
             </div>
           ) : null}
 
           {/* Tags */}
           <div>
-            <label className="mb-1.5 block text-xs tracking-widest text-muted uppercase">
+            <span
+              id={tagsLabelId}
+              className="mb-1.5 block text-xs tracking-widest text-muted uppercase"
+            >
               Tags
-            </label>
+            </span>
             <TagInput
+              labelledBy={tagsLabelId}
               value={object.tags}
               onChange={(next) => commit({ tags: next })}
               suggestions={allTags}
@@ -274,13 +399,16 @@ export function ObjectEditor() {
           {/* Room + pin */}
           <div className="flex items-end gap-3">
             <div className="flex-1">
-              <label className="mb-1.5 block text-xs tracking-widest text-muted uppercase">
+              <label
+                htmlFor={roomId}
+                className="mb-1.5 block text-xs tracking-widest text-muted uppercase"
+              >
                 Room
               </label>
               <Select
+                id={roomId}
                 value={object.roomId}
                 onChange={(e) => commit({ roomId: e.target.value })}
-                aria-label="Room"
               >
                 {rooms.map((r) => (
                   <option key={r.id} value={r.id}>
@@ -371,7 +499,11 @@ export function ObjectEditor() {
             <div>Created {new Date(object.createdAt).toLocaleDateString()}</div>
             <div>Updated {new Date(object.updatedAt).toLocaleDateString()}</div>
           </div>
-          <Button variant="danger" size="sm" onClick={() => setConfirmDelete(true)}>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => setConfirmDelete(true)}
+          >
             <Trash2 size={14} strokeWidth={1.75} />
             Delete
           </Button>

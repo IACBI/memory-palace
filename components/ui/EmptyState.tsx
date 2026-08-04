@@ -20,7 +20,9 @@ export function EmptyState({
         <Icon size={24} strokeWidth={1.5} />
       </span>
       <h3 className="font-display text-xl tracking-wide text-text">{title}</h3>
-      {hint ? <p className="mt-1.5 max-w-sm text-sm text-muted">{hint}</p> : null}
+      {hint ? (
+        <p className="mt-1.5 max-w-sm text-sm text-muted">{hint}</p>
+      ) : null}
       {action ? <div className="mt-5">{action}</div> : null}
     </div>
   );
