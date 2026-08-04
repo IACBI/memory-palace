@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { openFirstObject, openPalace } from "./helpers";
+import { graphSettled, openFirstObject, openPalace } from "./helpers";
 
 /**
  * Journeys that only a keyboard user takes. The graph in particular was
@@ -11,6 +11,7 @@ test("the graph can be walked and opened from the keyboard", async ({
   page,
 }) => {
   await openPalace(page, "./graph/");
+  await graphSettled(page);
 
   const graph = page.getByRole("listbox", { name: "Knowledge graph" });
   await graph.focus();
@@ -40,6 +41,8 @@ test("the graph can be walked and opened from the keyboard", async ({
 
 test("Escape clears the graph cursor", async ({ page }) => {
   await openPalace(page, "./graph/");
+  await graphSettled(page);
+
   const graph = page.getByRole("listbox", { name: "Knowledge graph" });
   await graph.focus();
   await page.keyboard.press("ArrowRight");

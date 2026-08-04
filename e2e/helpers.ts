@@ -35,6 +35,34 @@ export function objectCards(page: Page) {
   return page.locator('main [role="button"][aria-describedby]');
 }
 
+/** The graph canvas itself — `main` also holds the control icons' SVGs. */
+export const GRAPH = 'svg[aria-label="Knowledge graph"]';
+
+/**
+ * Waits for the force layout to stop moving.
+ *
+ * Nothing on the graph is interactive before its first frame: the nodes come
+ * from the simulation, so until one has been painted `orderedIds` is empty and
+ * every cursor move returns early without setting `aria-activedescendant`. A
+ * keystroke sent before then is silently dropped, which is what made the
+ * keyboard specs flaky on a loaded machine and never on a fast one.
+ */
+export async function graphSettled(page: Page) {
+  await expect(page.locator(`${GRAPH} circle`).first()).toBeVisible();
+  await page.waitForFunction((selector) => {
+    const svg = document.querySelector(selector);
+    if (!svg) return false;
+    const key = "__lastGraphBox";
+    const box = JSON.stringify(
+      [...svg.querySelectorAll("circle")].map((c) => c.getBoundingClientRect()),
+    );
+    const store = window as unknown as Record<string, string>;
+    const stable = store[key] === box;
+    store[key] = box;
+    return stable;
+  }, GRAPH);
+}
+
 /** Opens the editor on the first object of the first room. */
 export async function openFirstObject(page: Page) {
   await openPalace(page, "./palace/");

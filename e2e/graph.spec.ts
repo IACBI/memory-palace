@@ -1,25 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-import { openPalace } from "./helpers";
-
-/** The graph canvas itself — `main` also holds the control icons' SVGs. */
-const GRAPH = 'svg[aria-label="Knowledge graph"]';
-
-/** Waits for the force layout to stop moving. */
-async function settled(page: Page) {
-  await expect(page.locator(`${GRAPH} circle`).first()).toBeVisible();
-  await page.waitForFunction((selector) => {
-    const svg = document.querySelector(selector);
-    if (!svg) return false;
-    const key = "__lastGraphBox";
-    const box = JSON.stringify(
-      [...svg.querySelectorAll("circle")].map((c) => c.getBoundingClientRect()),
-    );
-    const store = window as unknown as Record<string, string>;
-    const stable = store[key] === box;
-    store[key] = box;
-    return stable;
-  }, GRAPH);
-}
+import { expect, test } from "@playwright/test";
+import { GRAPH, graphSettled as settled, openPalace } from "./helpers";
 
 test("every node ends up inside the canvas", async ({ page }) => {
   await openPalace(page, "./graph/");
