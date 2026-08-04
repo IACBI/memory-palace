@@ -465,6 +465,3 @@ export function createSeedData(): PalaceData {
     settings: { ...DEFAULT_SETTINGS },
   };
 }
-
-/** The seed palace document (a fresh copy on each access). */
-export const seedData: PalaceData = createSeedData();

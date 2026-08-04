@@ -1,7 +1,6 @@
 "use client";
 
 import { usePalaceStore } from "@/lib/store";
-import type { HydrationState } from "@/lib/store";
 
 /**
  * Whether the palace document is in memory yet.
@@ -12,9 +11,4 @@ import type { HydrationState } from "@/lib/store";
  */
 export function useHydrated(): boolean {
   return usePalaceStore((state) => state.hydrationState === "ready");
-}
-
-/** The full lifecycle state, for screens that distinguish first run or error. */
-export function useHydrationState(): HydrationState {
-  return usePalaceStore((state) => state.hydrationState);
 }

@@ -39,9 +39,6 @@ const persistence = createPersistence(adapter, () =>
   toPalaceData(usePalaceStore.getState()),
 );
 
-/** Forces any pending write to complete. Exposed for tests and teardown. */
-export const flushPalace = persistence.flush;
-
 function nowISO(): string {
   return new Date().toISOString();
 }

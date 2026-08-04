@@ -1,8 +1,10 @@
 name: CI
 
+# No `push` trigger on main: `deploy.yml` already calls this workflow, and a
+# push that matched both put two runs in the same concurrency group, where one
+# immediately cancelled the other. The gates still guard main — they run inside
+# the deploy workflow, which will not publish unless they pass.
 on:
-  push:
-    branches: [main]
   pull_request:
   workflow_call:
 
