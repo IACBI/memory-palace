@@ -54,12 +54,6 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      # TEMPORARY, with e2e/diagnose-sw.spec.ts. Chromium sizes its storage
-      # quota from free disk, and a rejected `caches.open` would discard the
-      # worker exactly as observed. Remove once the offline failure is understood.
-      - name: Diagnose (disk)
-        run: df -h /
-
       - name: End-to-end tests
         run: npx playwright test
 
