@@ -64,8 +64,19 @@ const REST = [
   "room",
 ];
 
-/** Any `/_next/static/…` URL appearing in an attribute or a script string. */
-const ASSET_PATTERN = /["'(]([^"'()\s]*\/_next\/static\/[^"'()\s]+)["')]/g;
+/**
+ * Any `/_next/static/…` URL appearing in an attribute or a script string.
+ *
+ * Backslash is a terminator, never part of the path. Next writes the RSC
+ * payload into the document as a JS string literal, so URLs inside it are
+ * delimited by `\"` rather than `"`. Letting the path absorb that backslash
+ * made `new URL()` normalise it to a slash — `chunk.js` became `chunk.js/`,
+ * which 404s on every install. Rejecting it without also accepting it as a
+ * closing delimiter is the other half: assets mentioned only in the payload
+ * would stop being found at all.
+ */
+const ASSET_PATTERN =
+  /["'(]([^"'()\\\s]*\/_next\/static\/[^"'()\\\s]+)["')\\]/g;
 
 /**
  * Caches a document and everything it loads to run.
