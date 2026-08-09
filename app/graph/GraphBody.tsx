@@ -28,7 +28,7 @@ export function GraphBody() {
 
   if (objects.length === 0) {
     return (
-      <div className="mt-8">
+      <div className="absolute inset-0 flex items-center justify-center p-6">
         <EmptyState
           icon={Share2}
           title="Nothing to plot yet"
@@ -41,14 +41,14 @@ export function GraphBody() {
   // Unconnected objects are still worth seeing: a constellation of separate
   // nodes is a valid graph, and hiding it made a populated palace look empty.
   return (
-    <div className="mt-8">
+    <>
       <GraphView objects={objects} rooms={rooms} connections={connections} />
       {connections.length === 0 ? (
-        <p className="mt-4 text-center text-sm text-muted">
+        <p className="pointer-events-none absolute inset-x-0 bottom-16 z-[var(--z-raised)] mx-auto max-w-md px-6 text-center text-sm text-muted">
           Nothing is linked yet. Open an object and use its Relationships
           section to draw the first connection.
         </p>
       ) : null}
-    </div>
+    </>
   );
 }

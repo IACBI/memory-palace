@@ -39,6 +39,8 @@ or the same room with the shutters open. Set in Syne and Instrument Sans.
 - **Room canvas** — place objects anywhere; draw connections between them by
   dragging, or with the `L` key.
 - **Graph** — a force-directed view of everything and how it connects.
+- **Full screen** — press `F` on the palace, a room or the graph to clear the
+  sidebar and top bar too; `Esc` brings them back.
 - **Library** — every object at once, with search, filters and sorting.
 - **Search** — multi-word, order-independent, with a fuzzy fallback.
 - **Undo** — `Ctrl/⌘ + Z` for every change, including deleting a room.
@@ -118,6 +120,8 @@ Instrument Sans ile dizilmiştir.
 - **Oda tuvali** — nesneleri istediğiniz yere koyun; aralarına sürükleyerek ya
   da `L` tuşuyla bağlantı çizin.
 - **Graph** — her şeyin ve bağlantılarının kuvvet tabanlı görünümü.
+- **Tam ekran** — Palace, bir oda ya da Graph üzerinde `F` tuşuna basmak kenar
+  çubuğunu ve üst çubuğu da gizler; `Esc` onları geri getirir.
 - **Library** — tüm nesneler tek yerde; arama, filtre ve sıralama ile.
 - **Arama** — çok kelimeli, sıradan bağımsız, bulanık eşleşme desteğiyle.
 - **Geri alma** — oda silme dahil her değişiklik için `Ctrl/⌘ + Z`.
@@ -195,6 +199,8 @@ bütçesi ve uçtan uca test takımı.
 - **Palace** — 由你自行布局的房间平面图。
 - **房间画布** — 随处放置对象；拖拽或按 `L` 键在它们之间连线。
 - **Graph** — 以力导向布局呈现全部对象及其连接。
+- **全屏** — 在 Palace、房间或 Graph 中按 `F`，连同侧边栏和顶部栏一起隐藏；`Esc`
+  恢复。
 - **Library** — 所有对象一览，支持搜索、筛选与排序。
 - **搜索** — 支持多词、与词序无关，并带模糊匹配兜底。
 - **撤销** — 任何改动都可 `Ctrl/⌘ + Z`，包括删除房间。
@@ -269,6 +275,8 @@ npm run test:e2e        # both deploy targets, end to end
 - **Palace** — कमरों का फ़्लोर प्लान, जिसे आप स्वयं सजाते हैं।
 - **कमरे का कैनवास** — वस्तुएँ कहीं भी रखें; खींचकर या `L` कुंजी से उनके बीच सम्बन्ध बनाएँ।
 - **Graph** — सब कुछ और उनके सम्बन्ध, फ़ोर्स-डायरेक्टेड दृश्य में।
+- **फ़ुल स्क्रीन** — Palace, किसी कमरे या Graph में `F` दबाने से साइडबार और ऊपर
+  की पट्टी भी छिप जाती है; `Esc` उन्हें वापस लाता है।
 - **Library** — सभी वस्तुएँ एक साथ, खोज, फ़िल्टर और क्रम के साथ।
 - **खोज** — बहु-शब्द, शब्द-क्रम से स्वतंत्र, फ़ज़ी मिलान के साथ।
 - **पूर्ववत** — हर बदलाव के लिए `Ctrl/⌘ + Z`, कमरा हटाने सहित।
@@ -347,6 +355,8 @@ Compuesto en Syne e Instrument Sans.
 - **Lienzo de habitación** — coloca objetos donde quieras; conéctalos
   arrastrando o con la tecla `L`.
 - **Graph** — una vista dirigida por fuerzas de todo y de cómo se conecta.
+- **Pantalla completa** — en el Palace, una habitación o el Graph, pulsa `F`
+  para ocultar también la barra lateral y la superior; `Esc` las recupera.
 - **Library** — todos los objetos a la vez, con búsqueda, filtros y orden.
 - **Búsqueda** — de varias palabras, sin importar el orden, con respaldo difuso.
 - **Deshacer** — `Ctrl/⌘ + Z` para cada cambio, incluido borrar una habitación.
@@ -429,6 +439,9 @@ ambas compilaciones, el presupuesto del bundle y la suite end-to-end.
 - **لوحة الغرفة** — ضع العناصر حيث تشاء، وارسم الروابط بينها بالسحب أو بمفتاح `L`.
 
 - **Graph** — عرض موجَّه بالقوى لكل شيء ولطريقة ارتباطه.
+
+- **ملء الشاشة** — اضغط `F` في Palace أو غرفة أو Graph لإخفاء الشريط الجانبي
+  والشريط العلوي أيضًا؛ يعيدهما `Esc`.
 
 - **Library** — كل العناصر دفعة واحدة، مع البحث والتصفية والترتيب.
 
@@ -524,6 +537,8 @@ Instrument Sans.
 - **Tela da sala** — coloque objetos onde quiser; ligue-os arrastando ou com a
   tecla `L`.
 - **Graph** — uma visão dirigida por forças de tudo e de como se conecta.
+- **Tela cheia** — pressione `F` no Palace, em uma sala ou no Graph para
+  ocultar também a barra lateral e a superior; `Esc` as traz de volta.
 - **Library** — todos os objetos de uma vez, com busca, filtros e ordenação.
 - **Busca** — com várias palavras, independente da ordem, com correspondência
   aproximada como reserva.
@@ -606,6 +621,8 @@ Instrument Sans.
 - **Холст комнаты** — размещайте объекты где угодно; связывайте их
   перетаскиванием или клавишей `L`.
 - **Graph** — силовое представление всего и всех связей.
+- **Полный экран** — `F` в Palace, в комнате или в Graph скрывает также
+  боковую панель и верхнюю панель; `Esc` возвращает их.
 - **Library** — все объекты сразу, с поиском, фильтрами и сортировкой.
 - **Поиск** — по нескольким словам, независимо от порядка, с нечётким запасным
   вариантом.

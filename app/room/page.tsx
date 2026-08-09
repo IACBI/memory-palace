@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { CanvasStage } from "@/components/shell/CanvasStage";
 import { RoomView } from "@/components/room/RoomView";
 import { RoomSkeleton } from "@/components/skeletons/RouteSkeletons";
 
@@ -15,11 +16,16 @@ export const metadata: Metadata = {
  * creates — not only the ones known at build time.
  *
  * The `<Suspense>` boundary is required: `RoomView` calls `useSearchParams()`.
+ *
+ * A `CanvasStage`, like the graph and the floor plan: the room's canvas takes
+ * the whole window and its own chrome floats over it.
  */
 export default function RoomPage() {
   return (
-    <Suspense fallback={<RoomSkeleton />}>
-      <RoomView />
-    </Suspense>
+    <CanvasStage>
+      <Suspense fallback={<RoomSkeleton />}>
+        <RoomView />
+      </Suspense>
+    </CanvasStage>
   );
 }

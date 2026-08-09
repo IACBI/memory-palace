@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { RoomChamber } from "@/components/palace/RoomChamber";
 import { RoomDialog, type RoomDraft } from "@/components/palace/RoomDialog";
 import { PalaceSkeleton } from "@/components/skeletons/RouteSkeletons";
+import { ImmersiveToggle } from "@/components/shell/ImmersiveToggle";
 import { GRID_COLS, GRID_ROWS, findFreeSlot } from "@/lib/layout";
 import type { Room } from "@/lib/types";
 
@@ -87,7 +88,7 @@ export function PalaceBody() {
   return (
     <>
       {rooms.length === 0 ? (
-        <div className="mt-12 sm:mt-16">
+        <div className="absolute inset-0 flex items-center justify-center p-6">
           <EmptyState
             icon={Castle}
             title="An empty floor plan"
@@ -100,12 +101,15 @@ export function PalaceBody() {
           />
         </div>
       ) : (
-        // The plan keeps its aspect ratio and scrolls sideways below its
-        // minimum width; squeezing a 12-column floor plan onto a phone makes
-        // every chamber unreadable instead.
-        <div className="mt-8 overflow-x-auto">
+        // The plan takes the window rather than a 3:2 card in a reading column
+        // — a floor plan of a place should read as the floor of a place. It
+        // still scrolls sideways below its minimum width; squeezing 12 columns
+        // onto a phone makes every chamber unreadable instead. `min-h` keeps a
+        // usable plan on a short window, where the stage alone would flatten
+        // the chambers into strips.
+        <div className="absolute inset-0 overflow-auto p-4 pt-20 sm:p-6 sm:pt-24">
           <div
-            className="palace-floor relative mx-auto grid aspect-[3/2] w-full min-w-[680px] gap-2 rounded-xl border border-border-hair p-3"
+            className="palace-floor relative grid h-full min-h-105 w-full min-w-[680px] gap-2 rounded-xl border border-border-hair p-3"
             style={{
               gridTemplateColumns: `repeat(${GRID_COLS}, minmax(0, 1fr))`,
               gridTemplateRows: `repeat(${GRID_ROWS}, minmax(0, 1fr))`,
@@ -123,6 +127,10 @@ export function PalaceBody() {
           </div>
         </div>
       )}
+
+      <div className="absolute right-3 bottom-3 z-[var(--z-raised)] rounded-md border border-border-hair bg-surface/90 p-1 backdrop-blur-md">
+        <ImmersiveToggle />
+      </div>
 
       <RoomDialog
         open={dialogOpen}

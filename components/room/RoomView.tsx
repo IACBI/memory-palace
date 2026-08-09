@@ -18,6 +18,7 @@ import { RoomIcon } from "@/components/RoomIcon";
 import { paletteColor, paletteTint } from "@/lib/palette";
 import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
+import { ImmersiveToggle } from "@/components/shell/ImmersiveToggle";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { RoomDialog, type RoomDraft } from "@/components/palace/RoomDialog";
@@ -229,7 +230,7 @@ export function RoomView() {
 
   if (!room) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-20 sm:px-8 sm:py-24">
+      <div className="mx-auto max-w-3xl overflow-y-auto px-4 py-20 sm:px-8 sm:py-24">
         <div className="rounded-xl border border-border-hair bg-surface p-8 text-center sm:p-12">
           <h1 className="font-display text-3xl font-bold tracking-tight text-text sm:text-4xl">
             Room not found
@@ -294,29 +295,42 @@ export function RoomView() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] flex-col">
+    <div className="absolute inset-0">
       {/*
         Arrival. The room's own pigment washes the top of the screen, so
         entering one reads as walking into a differently lit space rather than
         as loading a page with a different title.
+
+        Its own layer now that the header floats: the wash has to reach past
+        the header's box and bleed into the top of the canvas, which it cannot
+        do while it is that box's background.
       */}
       <div
-        className="relative px-4 py-6 sm:px-8 sm:py-8"
+        className="pointer-events-none absolute inset-x-0 top-0 h-56"
         style={{
           backgroundImage: `linear-gradient(to bottom, ${paletteTint(room.palette, "wash")}, transparent)`,
         }}
-      >
+        aria-hidden
+      />
+
+      {/*
+        The room's chrome, floating. It used to be a block above the canvas,
+        which cost the canvas a fifth of the window on a laptop for a title the
+        reader had already read on their way in. Only the controls take
+        pointers; the rest of the strip lets a drag through to the canvas.
+      */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-[var(--z-raised)] px-4 py-4 sm:px-6 sm:py-5">
         <Link
           href="/palace"
-          className="mb-5 inline-flex h-9 items-center gap-2 text-sm text-muted transition-quiet hover:text-text"
+          className="pointer-events-auto inline-flex h-9 items-center gap-2 text-sm text-muted transition-quiet hover:text-text"
         >
           <ArrowLeft size={16} strokeWidth={1.75} aria-hidden />
           Palace
         </Link>
-        <div className="flex flex-wrap items-start justify-between gap-5">
-          <div className="flex min-w-0 items-start gap-4">
+        <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-3.5">
             <span
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
               style={{
                 backgroundColor: paletteTint(room.palette, "chip"),
                 color,
@@ -324,24 +338,24 @@ export function RoomView() {
             >
               <RoomIcon
                 name={room.icon}
-                size={24}
+                size={22}
                 strokeWidth={1.75}
                 aria-hidden
               />
             </span>
             <div className="min-w-0">
-              <h1 className="font-display text-3xl leading-tight font-bold tracking-tight text-balance text-text sm:text-4xl">
+              <h1 className="font-display text-2xl leading-tight font-bold tracking-tight text-balance text-text sm:text-3xl">
                 {room.name}
               </h1>
-              <p className="mt-2.5 max-w-xl text-sm text-pretty text-muted">
-                {room.description}
-              </p>
-              <p className="tabular mt-2 text-2xs tracking-[0.18em] text-muted uppercase">
-                {objects.length} {objects.length === 1 ? "object" : "objects"}
+              <p className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-muted">
+                <span className="max-w-md truncate">{room.description}</span>
+                <span className="tabular text-2xs tracking-[0.18em] uppercase">
+                  {objects.length} {objects.length === 1 ? "object" : "objects"}
+                </span>
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="pointer-events-auto flex flex-wrap items-center gap-2">
             <Button variant="ghost" onClick={() => setEditOpen(true)}>
               <Pencil size={14} strokeWidth={1.75} aria-hidden />
               Edit
@@ -356,14 +370,20 @@ export function RoomView() {
             </Button>
           </div>
         </div>
-        <div
-          className="absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-border-strong via-border-hair to-transparent sm:inset-x-8"
-          aria-hidden
-        />
       </div>
 
-      {/* Spatial canvas */}
-      <div className="relative min-h-[60vh] flex-1 overflow-hidden p-3 sm:p-6">
+      {/*
+        Spatial canvas.
+
+        Edge to edge on three sides: the lit floor is the screen, and an inset
+        rectangle of it reads as a picture of a room rather than the room.
+
+        The top padding is what keeps object cards out from under the floating
+        header. Cards are positioned as a percentage of the *measured* canvas
+        box, so insetting the box is the whole fix — no coordinate conversion
+        changes, and `ConnectionLayer`'s viewBox still matches it exactly.
+      */}
+      <div className="absolute inset-0 overflow-hidden pt-38 sm:pt-34">
         {/* Announces link progress to a screen reader without moving focus. */}
         <span aria-live="polite" className="sr-only">
           {announcement}
@@ -409,7 +429,7 @@ export function RoomView() {
         ) : (
           <div
             ref={canvasRef}
-            className="room-canvas-grain relative h-full min-h-[60vh] w-full rounded-xl border border-border-hair"
+            className="room-canvas-grain relative h-full w-full"
             style={{
               backgroundColor: paletteTint(room.palette, "wash"),
               boxShadow: `inset 0 0 140px 10px ${paletteTint(room.palette, "wash")}`,
@@ -482,6 +502,10 @@ export function RoomView() {
             </p>
           </div>
         )}
+      </div>
+
+      <div className="absolute right-3 bottom-3 z-[var(--z-raised)] rounded-md border border-border-hair bg-surface/90 p-1 backdrop-blur-md">
+        <ImmersiveToggle />
       </div>
 
       <RoomDialog

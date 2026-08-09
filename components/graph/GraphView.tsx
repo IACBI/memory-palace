@@ -37,6 +37,7 @@ import { prefersReducedMotion } from "@/lib/prefs";
 import { paletteColor } from "@/lib/palette";
 import { cn } from "@/lib/cn";
 import { IconButton } from "@/components/ui/IconButton";
+import { ImmersiveToggle } from "@/components/shell/ImmersiveToggle";
 import type { KnowledgeObject, Room } from "@/lib/types";
 
 const WIDTH = 960;
@@ -618,15 +619,14 @@ export function GraphView({
   })();
 
   return (
-    <div className="flex flex-col gap-4 lg:flex-row">
-      <div
-        ref={canvasRef}
-        className="relative min-w-0 flex-1 overflow-hidden rounded-xl border border-border-hair bg-surface/40"
-      >
+    <>
+      {/* The canvas is the page: no card, no border, no wash of its own. The
+          shell's ground reads as space, which a framed rectangle never did. */}
+      <div ref={canvasRef} className="absolute inset-0 overflow-hidden">
         <svg
           ref={svgRef}
           viewBox={`${WIDTH / 2 - view.w / 2} ${HEIGHT / 2 - view.h / 2} ${view.w} ${view.h}`}
-          className="h-[64vh] min-h-96 w-full touch-none select-none lg:h-[76vh]"
+          className="h-full w-full touch-none select-none"
           onPointerDown={onBgPointerDown}
           onPointerMove={onBgPointerMove}
           onPointerUp={onBgPointerUp}
@@ -770,7 +770,7 @@ export function GraphView({
         </svg>
 
         {/* Visible controls: useful to mouse, touch and keyboard alike. */}
-        <div className="absolute right-3 bottom-3 flex flex-col gap-1 rounded-md border border-border-hair bg-surface/90 p-1 backdrop-blur">
+        <div className="absolute right-3 bottom-3 flex flex-col gap-1 rounded-md border border-border-hair bg-surface/90 p-1 backdrop-blur-md">
           <IconButton label="Zoom in" onClick={() => zoomBy(1.2)}>
             <Plus size={15} strokeWidth={1.75} aria-hidden />
           </IconButton>
@@ -780,6 +780,7 @@ export function GraphView({
           <IconButton label="Fit everything on screen" onClick={fitToView}>
             <Maximize size={14} strokeWidth={1.75} aria-hidden />
           </IconButton>
+          <ImmersiveToggle />
         </div>
 
         <p
@@ -787,7 +788,7 @@ export function GraphView({
           className="pointer-events-none absolute bottom-3 left-3 max-w-[60%] text-2xs text-muted"
         >
           Ctrl and scroll to zoom · drag to pan · focus the graph and use arrow
-          keys to walk between objects, Enter to open
+          keys to walk between objects, Enter to open · F for fullscreen
         </p>
 
         {/* Reads the cursor node out as it moves. */}
@@ -796,7 +797,17 @@ export function GraphView({
         </span>
       </div>
 
-      <aside className="w-full shrink-0 lg:w-56">
+      {/*
+        The room filter, floated opposite the page title rather than parked in
+        a column beside the canvas. Four corners — title, rooms, help, zoom —
+        leaves the middle of the window entirely to the graph.
+
+        `bg-surface/90` rather than a lighter tint on purpose: this panel sits
+        over a canvas whose colour is whatever the graph put underneath it, and
+        the axe pass in `e2e/a11y.spec.ts` measures its text against whatever
+        composites through.
+      */}
+      <aside className="absolute top-3 right-3 z-[var(--z-raised)] max-h-[min(24rem,calc(100%-6rem))] w-48 overflow-y-auto rounded-xl border border-border-hair bg-surface/90 p-2 backdrop-blur-md sm:w-56">
         <SectionLabel>Rooms</SectionLabel>
         <ul className="space-y-0.5">
           {rooms.map((room) => {
@@ -840,6 +851,6 @@ export function GraphView({
           </button>
         ) : null}
       </aside>
-    </div>
+    </>
   );
 }

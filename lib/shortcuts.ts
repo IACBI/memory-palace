@@ -12,7 +12,8 @@
  */
 
 /** Where a shortcut applies. */
-export type ShortcutScope = "global" | "room" | "graph" | "palette" | "editor";
+export type ShortcutScope =
+  "global" | "canvas" | "room" | "graph" | "palette" | "editor";
 
 /**
  * The platform-dependent modifier: `Ctrl` everywhere, `⌘` on Apple hardware.
@@ -48,6 +49,15 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
       { chords: [[MOD, "Z"]], label: "Undo the last change" },
       { chords: [[MOD, "Shift", "Z"]], label: "Redo" },
       { chords: [["Esc"]], label: "Close the topmost dialog or panel" },
+    ],
+  },
+  {
+    scope: "canvas",
+    title: "Full-screen canvases",
+    hint: "On the palace, a room and the graph.",
+    shortcuts: [
+      { chords: [["F"]], label: "Fill the screen with the canvas" },
+      { chords: [["Esc"]], label: "Leave full screen" },
     ],
   },
   {

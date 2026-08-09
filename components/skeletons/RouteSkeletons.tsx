@@ -8,13 +8,26 @@ import { GRID_COLS, GRID_ROWS } from "@/lib/layout";
  * not jump when the real content arrives. Marked `aria-busy` and hidden from
  * assistive technology — there is nothing here to read out.
  */
-function Region({ children }: { children: React.ReactNode }) {
+function Region({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div aria-busy="true" aria-hidden>
+    <div aria-busy="true" aria-hidden className={className}>
       {children}
     </div>
   );
 }
+
+/**
+ * The three canvas routes fill their `CanvasStage`, so their placeholders have
+ * to as well — a skeleton that reserves a different amount of space than the
+ * thing it stands in for is the jump it exists to prevent.
+ */
+const STAGE = "absolute inset-0";
 
 export function DashboardSkeleton() {
   return (
@@ -56,10 +69,10 @@ export function PalaceSkeleton() {
   ];
 
   return (
-    <Region>
-      <div className="mt-8 overflow-x-auto">
+    <Region className={STAGE}>
+      <div className="h-full overflow-x-auto p-4 pt-20 sm:p-6 sm:pt-24">
         <div
-          className="palace-floor relative mx-auto grid aspect-[3/2] w-full min-w-[680px] gap-2 rounded-xl border border-border-hair p-3"
+          className="palace-floor relative grid h-full min-h-105 w-full min-w-[680px] gap-2 rounded-xl border border-border-hair p-3"
           style={{
             gridTemplateColumns: `repeat(${GRID_COLS}, minmax(0, 1fr))`,
             gridTemplateRows: `repeat(${GRID_ROWS}, minmax(0, 1fr))`,
@@ -123,11 +136,11 @@ export function GraphSkeleton() {
   ];
 
   return (
-    <Region>
-      <div className="mt-6 overflow-hidden rounded-xl border border-border-hair bg-surface/40">
+    <Region className={STAGE}>
+      <div className="h-full w-full overflow-hidden">
         <svg
           viewBox="0 0 960 520"
-          className="h-[60vh] w-full animate-pulse"
+          className="h-full w-full animate-pulse"
           role="presentation"
         >
           {links.map(([a, b], i) => (
@@ -174,19 +187,19 @@ export function SettingsSkeleton() {
 
 export function RoomSkeleton() {
   return (
-    <Region>
-      <div className="px-4 py-6 sm:px-8 sm:py-8">
+    <Region className={STAGE}>
+      <div className="absolute inset-x-0 top-0 px-4 py-4 sm:px-6 sm:py-6">
         <Skeleton className="h-4 w-20" />
-        <div className="mt-5 flex items-start gap-4">
-          <Skeleton className="h-12 w-12 rounded-lg" />
+        <div className="mt-4 flex items-start gap-4">
+          <Skeleton className="h-11 w-11 rounded-lg" />
           <div className="flex-1">
-            <Skeleton className="h-10 w-64 max-w-full" />
-            <Skeleton className="mt-2.5 h-4 w-96 max-w-full" />
+            <Skeleton className="h-8 w-64 max-w-full" />
+            <Skeleton className="mt-2 h-4 w-96 max-w-full" />
           </div>
         </div>
       </div>
-      <div className="p-4 sm:p-6">
-        <Skeleton className="h-[60vh] rounded-xl" />
+      <div className="h-full p-3 pt-32 sm:p-6 sm:pt-30">
+        <Skeleton className="h-full w-full rounded-none" />
       </div>
     </Region>
   );

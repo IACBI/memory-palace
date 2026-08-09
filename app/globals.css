@@ -138,6 +138,16 @@
    * this expand their target rather than their box.
    */
   --hit-min: 44px;
+
+  /*
+   * The height of the shell's top bar, in one place.
+   *
+   * `CanvasStage` sizes the graph, the room and the floor plan against it, so
+   * a canvas can fill exactly what is left of the viewport. Two numbers that
+   * had to agree became one that cannot drift — and setting it to 0 below is
+   * the whole of what immersive mode does to the layout.
+   */
+  --shell-header: 4rem;
 }
 
 /*
@@ -375,6 +385,25 @@ body {
    as their digits change. */
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Immersive mode: the canvas takes the whole window.
+ *
+ * Expressed as a root attribute rather than a store flag so `AppShell` can
+ * stay a Server Component — the same reason `data-theme` and
+ * `data-reduce-motion` live here. `lib/immersive.ts` is the only writer.
+ *
+ * Zeroing --shell-header is what resizes the canvas: `CanvasStage` already
+ * measures itself against that token, so there is no second layout mode and no
+ * JavaScript in the resize path at all.
+ */
+:root[data-immersive="true"] [data-shell-chrome] {
+  display: none;
+}
+
+:root[data-immersive="true"] {
+  --shell-header: 0rem;
 }
 
 /*

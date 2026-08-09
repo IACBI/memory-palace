@@ -48,6 +48,36 @@ hydration spinner, so the static HTML of every route contained nothing but
 "Opening the palace…": nothing to paint, nothing to index, and no way for a
 route to describe itself with its own metadata.
 
+### The canvas routes
+
+The palace, a room and the graph show a _place_. All three used to sit in the
+same padded reading column as the library and the settings page — a `3:2` card,
+a `64vh` box beside a legend column — with a heading above pushing them down.
+They now use `components/shell/CanvasStage.tsx`, which is
+`h-[calc(100svh-var(--shell-header))]`: exactly what the shell leaves. Their
+titles, room legend, zoom stack and room actions float over the canvas instead
+of stacking above it, which is also why each still renders a real, visible `h1`
+— `e2e/smoke.spec.ts` checks every route has one and `e2e/onboarding.spec.ts`
+checks it with JavaScript disabled.
+
+`--shell-header` (declared with the other non-colour tokens) is the single
+source of the top bar's height: `AppShell`'s header is `h-[var(--shell-header)]`
+and every stage measures against it, so the two cannot drift.
+
+Fullscreen — `F`, or the button in each canvas's control cluster — hides the
+header and the sidebar too. It is an attribute on the document element,
+`data-immersive`, not a store flag, for the same reason `data-theme` is: the
+chrome it hides lives in a Server Component that must not subscribe to React
+state. `lib/immersive.ts` is the only writer, `app/globals.css` has the two
+rules, and one of them sets `--shell-header: 0rem` — which is the entire resize
+path, with no JavaScript in it. Escape leaves the mode through
+`lib/overlay-stack.ts` like every other dismissal, and navigating away leaves it
+too: landing on the library with no navigation would be a dead end.
+
+`svh` rather than `vh` throughout. On a phone `100vh` is the viewport at its
+_largest_, so `100vh - 4rem` overflows behind the browser's own bar and the page
+scrolls a little with nothing on screen to explain why.
+
 ### State and persistence
 
 `lib/store.ts` is a single Zustand store holding the whole `PalaceData`
@@ -173,9 +203,10 @@ them in — they do not vary by theme and must not be redeclared under
 screen on one large display line), `--radius-sm` through `--radius-xl`, a
 `--z-raised | sticky | drawer | overlay | toast` stacking scale (replacing
 nine ad hoc values spread between `z-0` and `z-[80]`), the motion system
-below, and `--hit-min: 44px`, consumed by the `.hit-area` utility that expands
+below, `--hit-min: 44px`, consumed by the `.hit-area` utility that expands
 a control's tap target with a centred pseudo-element rather than growing the
-control itself. Every interactive element clears 44px except inline
+control itself, and `--shell-header`, which the canvas routes size themselves
+against. Every interactive element clears 44px except inline
 tag-remove buttons, which stay 24px — WCAG 2.5.8 exempts inline targets, and
 44px there would overlap neighbouring tags and swallow their clicks.
 

@@ -57,6 +57,28 @@ for `GraphView`, keeping `d3-force` out of the shared chunk. If you add a
 fourth global overlay, split it the same way — do not add it directly to
 `Overlays.tsx`'s render and undo the point of the split.
 
+### Three routes are canvases, not documents
+
+`/palace`, `/room` and `/graph` wrap their body in
+`components/shell/CanvasStage.tsx` and fill the shell's content area exactly.
+Their chrome — page title, the graph's room legend, a room's back link and
+actions — **floats over** the canvas; nothing goes above it and pushes it down,
+which is what the redesign was for. Each of those overlays still renders a real,
+visible `h1`: `e2e/smoke.spec.ts` asserts one per route and
+`e2e/onboarding.spec.ts` asserts it with JavaScript off, so moving a title into
+an `sr-only` span or a client component breaks both.
+
+`--shell-header` in `app/globals.css` is the only place the top bar's height is
+written. `AppShell`'s header reads it and every stage subtracts it — do not
+type `4rem` or `h-16` at a call site again.
+
+Fullscreen (`F`) is `data-immersive` on the document element, written only by
+`lib/immersive.ts`, with two rules in `app/globals.css`; one sets
+`--shell-header: 0rem` and that is the whole resize path. It is deliberately not
+a store flag — `AppShell` and `Sidebar` carry the `data-shell-chrome` attribute
+that CSS hides, which is what lets `AppShell` stay a Server Component. Sizing is
+`svh`, never `vh`.
+
 ### Reach for the shared primitive, don't hand-roll one
 
 `components/ui/` has `Card`, `Menu`, `IconButton` and `SectionLabel` alongside

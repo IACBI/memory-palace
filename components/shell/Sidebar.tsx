@@ -64,6 +64,7 @@ export function Sidebar() {
 
   return (
     <aside
+      data-shell-chrome
       className={cn(
         "sticky top-0 z-[var(--z-raised)] hidden h-screen w-16 shrink-0 flex-col border-r border-border-hair bg-surface/40 backdrop-blur-sm md:flex",
         collapsed ? "lg:w-16" : "lg:w-64",

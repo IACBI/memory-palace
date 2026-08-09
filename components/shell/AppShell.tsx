@@ -21,6 +21,11 @@ import { HydrationGate } from "@/components/providers/HydrationGate";
  * wrapper around it: `e2e/responsive.spec.ts` locates the sidebar as
  * `body > div > aside` and measures it at exactly 64 and 256, so the aside has
  * to stay a direct child of this root element at those two widths.
+ *
+ * `data-shell-chrome` marks the two things a canvas route can send away: the
+ * header here and the sidebar's `<aside>`. `lib/immersive.ts` sets an
+ * attribute on the document element and `app/globals.css` hides them, which is
+ * what lets this stay a Server Component while a client island drives the mode.
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -46,7 +51,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar />
 
       <div className="relative flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-[var(--z-sticky)] flex h-16 items-center gap-3 bg-ground/70 px-3 backdrop-blur-md sm:px-6">
+        <header
+          data-shell-chrome
+          className="sticky top-0 z-[var(--z-sticky)] flex h-[var(--shell-header)] items-center gap-3 bg-ground/70 px-3 backdrop-blur-md sm:px-6"
+        >
           <MobileDrawer />
           <CommandTrigger />
           <SaveIndicator />
