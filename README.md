@@ -9,7 +9,7 @@
 ![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?logo=tailwindcss&logoColor=white)
-![License: MIT](https://img.shields.io/badge/License-MIT-c9a227)
+![License: MIT](https://img.shields.io/badge/License-MIT-f0b775)
 
 **[▶ Try the live demo →](https://iacbi.github.io/memory-palace/)**
 
@@ -30,6 +30,9 @@ relationships between them form a graph you can wander.
 It is **local-first**: everything is saved in your browser, instantly and
 privately. Nothing is uploaded, and the app works with no connection at all.
 
+Visually, it is a room with one light in it — a cool graphite ground lit warm,
+or the same room with the shutters open. Set in Syne and Instrument Sans.
+
 ### Features
 
 - **Palace** — a floor plan of rooms you lay out yourself.
@@ -40,7 +43,7 @@ privately. Nothing is uploaded, and the app works with no connection at all.
 - **Search** — multi-word, order-independent, with a fuzzy fallback.
 - **Undo** — `Ctrl/⌘ + Z` for every change, including deleting a room.
 - **Offline** — installable, and fully usable with no network.
-- **Two themes** — candlelit dark, or Parchment light.
+- **Two themes** — lamplit Palace, or daylit Parchment.
 
 ### Requirements
 
@@ -105,6 +108,10 @@ aralarındaki ilişkiler dolaşabileceğiniz bir graf oluşturur.
 **Yerel önceliklidir**: her şey anında ve gizlice tarayıcınıza kaydedilir.
 Hiçbir veri yüklenmez ve uygulama bağlantı olmadan da tam çalışır.
 
+Görsel olarak, içinde tek bir ışık olan bir odadır — sıcak ışıkla aydınlanmış
+serin grafit bir zemin ya da aynı odanın kepenkleri açılmış hâli. Syne ve
+Instrument Sans ile dizilmiştir.
+
 ### Özellikler
 
 - **Palace** — kendi yerleştirdiğiniz odalardan oluşan bir kat planı.
@@ -115,7 +122,7 @@ Hiçbir veri yüklenmez ve uygulama bağlantı olmadan da tam çalışır.
 - **Arama** — çok kelimeli, sıradan bağımsız, bulanık eşleşme desteğiyle.
 - **Geri alma** — oda silme dahil her değişiklik için `Ctrl/⌘ + Z`.
 - **Çevrimdışı** — kurulabilir ve ağ olmadan tümüyle kullanılabilir.
-- **İki tema** — mum ışığı koyu ya da Parchment açık.
+- **İki tema** — lamba ışığındaki Palace ya da gün ışığındaki Parchment.
 
 ### Gereksinimler
 
@@ -180,6 +187,9 @@ bütçesi ve uçtan uca test takımı.
 它是**本地优先**的：一切都即时、私密地保存在你的浏览器中。没有任何数据被上传，
 完全断网也能照常使用。
 
+在视觉上，它是一间只点着一盏灯的房间——冷灰的地面被暖光照亮，或是同一间房
+拉开百叶后的样子。以 Syne 和 Instrument Sans 排版。
+
 ### 功能
 
 - **Palace** — 由你自行布局的房间平面图。
@@ -189,7 +199,7 @@ bütçesi ve uçtan uca test takımı.
 - **搜索** — 支持多词、与词序无关，并带模糊匹配兜底。
 - **撤销** — 任何改动都可 `Ctrl/⌘ + Z`，包括删除房间。
 - **离线** — 可安装，且在完全无网络时依然可用。
-- **两套主题** — 烛光般的深色，或 Parchment 浅色。
+- **两套主题** — 灯光下的 Palace，或日光下的 Parchment。
 
 ### 环境要求
 
@@ -251,6 +261,9 @@ npm run test:e2e        # both deploy targets, end to end
 यह **लोकल-फ़र्स्ट** है: सब कुछ तुरंत और निजी तौर पर आपके ब्राउज़र में सहेजा जाता है। कुछ
 भी अपलोड नहीं होता, और बिना किसी कनेक्शन के भी ऐप पूरी तरह चलता है।
 
+दिखने में यह एक ऐसा कमरा है जिसमें बस एक रोशनी है — गर्म रोशनी से जगमगाती ठंडी
+ग्रेफ़ाइट ज़मीन, या वही कमरा जब खिड़कियाँ खुली हों। Syne और Instrument Sans में सेट।
+
 ### विशेषताएँ
 
 - **Palace** — कमरों का फ़्लोर प्लान, जिसे आप स्वयं सजाते हैं।
@@ -260,7 +273,7 @@ npm run test:e2e        # both deploy targets, end to end
 - **खोज** — बहु-शब्द, शब्द-क्रम से स्वतंत्र, फ़ज़ी मिलान के साथ।
 - **पूर्ववत** — हर बदलाव के लिए `Ctrl/⌘ + Z`, कमरा हटाने सहित।
 - **ऑफ़लाइन** — इंस्टॉल करने योग्य, और बिना नेटवर्क पूरी तरह उपयोगी।
-- **दो थीम** — मोमबत्ती-सी गहरी, या Parchment हल्की।
+- **दो थीम** — दीये की रोशनी वाला Palace, या दिन के उजाले वाला Parchment।
 
 ### आवश्यकताएँ
 
@@ -324,6 +337,10 @@ grafo por el que puedes pasear.
 Es **local-first**: todo se guarda en tu navegador, al instante y en privado.
 No se sube nada, y la aplicación funciona sin conexión alguna.
 
+Visualmente es una habitación con una sola luz: un suelo de grafito frío
+iluminado en cálido, o esa misma habitación con las contraventanas abiertas.
+Compuesto en Syne e Instrument Sans.
+
 ### Características
 
 - **Palace** — un plano de habitaciones que distribuyes tú.
@@ -334,7 +351,7 @@ No se sube nada, y la aplicación funciona sin conexión alguna.
 - **Búsqueda** — de varias palabras, sin importar el orden, con respaldo difuso.
 - **Deshacer** — `Ctrl/⌘ + Z` para cada cambio, incluido borrar una habitación.
 - **Sin conexión** — instalable y plenamente utilizable sin red.
-- **Dos temas** — oscuro a la luz de las velas, o Parchment claro.
+- **Dos temas** — Palace, a la luz de una lámpara, o Parchment, a la luz del día.
 
 ### Requisitos
 
@@ -402,6 +419,9 @@ ambas compilaciones, el presupuesto del bundle y la suite end-to-end.
 التطبيق **محلّي أولًا**: يُحفظ كل شيء في متصفّحك فورًا وبخصوصية تامة. لا يُرفع أي شيء،
 ويعمل التطبيق بالكامل دون أي اتصال بالشبكة.
 
+بصريًا، هو غرفة فيها ضوء واحد — أرضية غرافيتية باردة يضيئها ضوء دافئ، أو الغرفة
+نفسها وقد فُتحت مصاريعها. بخط Syne وInstrument Sans.
+
 ### المزايا
 
 - **Palace** — مخطّط طابقي من غرفٍ ترتّبها أنت.
@@ -418,7 +438,7 @@ ambas compilaciones, el presupuesto del bundle y la suite end-to-end.
 
 - **العمل دون اتصال** — قابل للتثبيت، وصالح للاستخدام كاملًا دون شبكة.
 
-- **سمتان** — داكنة بضوء الشموع، أو Parchment الفاتحة.
+- **سمتان** — Palace بضوء المصباح، أو Parchment بضوء النهار.
 
 ### المتطلبات
 
@@ -494,6 +514,10 @@ caminhar.
 Ele é **local-first**: tudo é salvo no seu navegador, na hora e de forma
 privada. Nada é enviado para lugar nenhum, e o aplicativo funciona sem conexão.
 
+Visualmente, é um cômodo com uma única luz — um piso de grafite frio iluminado
+em tom quente, ou o mesmo cômodo com as venezianas abertas. Composto em Syne e
+Instrument Sans.
+
 ### Recursos
 
 - **Palace** — uma planta baixa de salas organizada por você.
@@ -505,7 +529,7 @@ privada. Nada é enviado para lugar nenhum, e o aplicativo funciona sem conexão
   aproximada como reserva.
 - **Desfazer** — `Ctrl/⌘ + Z` para cada mudança, inclusive excluir uma sala.
 - **Offline** — instalável e totalmente utilizável sem rede.
-- **Dois temas** — escuro à luz de velas, ou Parchment claro.
+- **Dois temas** — Palace, à luz de lâmpada, ou Parchment, à luz do dia.
 
 ### Requisitos
 
@@ -572,6 +596,10 @@ unitários, as duas compilações, o orçamento do bundle e a suíte end-to-end.
 Приложение работает **локально**: всё сохраняется в вашем браузере, мгновенно и
 приватно. Никуда ничего не загружается, и всё работает вообще без сети.
 
+Внешне это комната с одним источником света — холодный графитовый фон, залитый
+тёплым светом, или та же комната с открытыми ставнями. Набрано шрифтами Syne и
+Instrument Sans.
+
 ### Возможности
 
 - **Palace** — план этажа из комнат, который вы составляете сами.
@@ -583,7 +611,7 @@ unitários, as duas compilações, o orçamento do bundle e a suíte end-to-end.
   вариантом.
 - **Отмена** — `Ctrl/⌘ + Z` для любого изменения, включая удаление комнаты.
 - **Офлайн** — устанавливается и полностью работает без сети.
-- **Две темы** — тёмная при свете свечей или светлая Parchment.
+- **Две темы** — Palace при свете лампы или Parchment при дневном свете.
 
 ### Требования
 

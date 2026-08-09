@@ -13,7 +13,7 @@ function ShortcutKeys({ shortcut }: { shortcut: Shortcut }) {
       {shortcut.chords.map((chord, index) => (
         <Fragment key={index}>
           {index > 0 ? (
-            <span className="px-0.5 text-[11px] text-muted">or</span>
+            <span className="px-0.5 text-2xs text-muted">or</span>
           ) : null}
           {resolveChord(chord, apple).map((key) => (
             <Kbd key={key}>{key}</Kbd>

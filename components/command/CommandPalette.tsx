@@ -21,6 +21,7 @@ import { searchPalace, type MatchRange } from "@/lib/search";
 import { byUpdatedDesc } from "@/lib/sort";
 import type { KnowledgeObject, PaletteKey, Room } from "@/lib/types";
 import { paletteColor, paletteTint } from "@/lib/palette";
+import { cn } from "@/lib/cn";
 import { RoomIcon } from "@/components/RoomIcon";
 import { Highlight } from "@/components/ui/Highlight";
 import { ObjectRow } from "@/components/objects/ObjectRow";
@@ -76,36 +77,21 @@ type CommandItem = { key: string; group: string } & (
   | { kind: "action"; action: QuickAction }
 );
 
-export function CommandPalette() {
-  const open = usePalaceStore((s) => s.commandPaletteOpen);
-  const setOpen = usePalaceStore((s) => s.setCommandPaletteOpen);
-
-  // Global Ctrl/Cmd+K toggles the palette.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setOpen(!usePalaceStore.getState().commandPaletteOpen);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [setOpen]);
-
-  if (!open || typeof document === "undefined") return null;
-  return <CommandPaletteInner onClose={() => setOpen(false)} />;
-}
-
 /**
- * The palette body. Mounted only while open, so its query/selection state is
- * always fresh — no reset effect needed.
+ * The palette body.
+ *
+ * Mounted only while open — by `components/shell/Overlays.tsx`, which owns the
+ * Ctrl/Cmd+K listener so this module and everything it pulls in (the search
+ * index, the row renderers) can be code-split behind the first press. Its
+ * query and selection state is therefore always fresh; no reset effect.
  */
-function CommandPaletteInner({ onClose }: { onClose: () => void }) {
+export function CommandPalette() {
   const rooms = usePalaceStore((s) => s.rooms);
   const objects = usePalaceStore((s) => s.objects);
   const openObject = usePalaceStore((s) => s.openObject);
   const createObject = usePalaceStore((s) => s.createObject);
   const requestNewRoom = usePalaceStore((s) => s.requestNewRoom);
+  const setOpen = usePalaceStore((s) => s.setCommandPaletteOpen);
   const router = useRouter();
 
   const [query, setQuery] = useState("");
@@ -114,7 +100,7 @@ function CommandPaletteInner({ onClose }: { onClose: () => void }) {
   const listRef = useRef<HTMLDivElement>(null);
   const listId = useId();
 
-  const close = onClose;
+  const close = () => setOpen(false);
 
   // Mounted only while open, so the overlay is always active here.
   const panelRef = useFocusTrap<HTMLDivElement>(true, {
@@ -291,13 +277,18 @@ function CommandPaletteInner({ onClose }: { onClose: () => void }) {
                 color: paletteColor(item.room.palette),
               }}
             >
-              <RoomIcon name={item.room.icon} size={14} strokeWidth={1.75} />
+              <RoomIcon
+                name={item.room.icon}
+                size={14}
+                strokeWidth={1.75}
+                aria-hidden
+              />
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm text-text">
                 <Highlight text={item.room.name} ranges={item.matches} />
               </span>
-              <span className="block truncate text-[11px] text-muted">
+              <span className="block truncate text-2xs text-muted">
                 {item.room.description}
               </span>
             </span>
@@ -322,7 +313,7 @@ function CommandPaletteInner({ onClose }: { onClose: () => void }) {
               <span className="block truncate text-sm text-text">
                 Create “{item.title}”
               </span>
-              <span className="block truncate text-[11px] text-muted">
+              <span className="block truncate text-2xs text-muted">
                 A new note in {item.room.name}
               </span>
             </span>
@@ -386,8 +377,10 @@ function CommandPaletteInner({ onClose }: { onClose: () => void }) {
     }
   };
 
+  if (typeof document === "undefined") return null;
+
   return createPortal(
-    <div className="fixed inset-0 z-[70] flex items-start justify-center p-4 pt-[12vh]">
+    <div className="fixed inset-0 z-[var(--z-toast)] flex items-start justify-center p-3 pt-[8vh] sm:p-4 sm:pt-[12vh]">
       <div
         className="motion-fade-in absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={close}
@@ -398,13 +391,14 @@ function CommandPaletteInner({ onClose }: { onClose: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
-        className="motion-dialog-in relative z-10 flex max-h-[70vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-border-strong bg-surface shadow-[0_32px_100px_-16px_rgba(0,0,0,0.8)]"
+        className="motion-dialog-in relative z-[var(--z-raised)] flex max-h-[80vh] w-full max-w-xl flex-col overflow-hidden rounded-xl border border-border-strong bg-surface shadow-overlay sm:max-h-[70vh]"
       >
         <div className="flex items-center gap-3 border-b border-border-hair px-4">
           <Search
             size={18}
             strokeWidth={1.75}
             className="shrink-0 text-muted"
+            aria-hidden
           />
           {/*
             ARIA 1.2 combobox. Focus stays in the input while `aria-
@@ -456,7 +450,7 @@ function CommandPaletteInner({ onClose }: { onClose: () => void }) {
               >
                 <div
                   aria-hidden
-                  className="px-4 py-1.5 text-[11px] tracking-widest text-muted uppercase"
+                  className="px-4 py-1.5 text-2xs tracking-widest text-muted uppercase"
                 >
                   {group.name}
                 </div>
@@ -475,11 +469,12 @@ function CommandPaletteInner({ onClose }: { onClose: () => void }) {
                     data-index={index}
                     onMouseMove={() => setActive(index)}
                     onClick={() => runItem(item)}
-                    className={`flex w-full items-center justify-between gap-3 px-4 py-2 text-left transition-colors ${
+                    className={cn(
+                      "flex min-h-11 w-full items-center justify-between gap-3 px-4 py-2 text-left transition-quiet",
                       index === clampedActive
                         ? "bg-surface-2"
-                        : "hover:bg-surface-2/50"
-                    }`}
+                        : "hover:bg-surface-2/50",
+                    )}
                   >
                     <span className="min-w-0 flex-1">{renderItem(item)}</span>
                     {index === clampedActive ? (
@@ -487,6 +482,7 @@ function CommandPaletteInner({ onClose }: { onClose: () => void }) {
                         size={14}
                         strokeWidth={1.75}
                         className="shrink-0 text-muted"
+                        aria-hidden
                       />
                     ) : null}
                   </button>

@@ -13,6 +13,8 @@ import { Kbd } from "@/components/ui/Kbd";
 import { ShortcutList } from "@/components/shortcuts/ShortcutList";
 import { InstallApp } from "@/components/settings/InstallApp";
 import { Switch } from "@/components/ui/Switch";
+import { SectionLabel } from "@/components/ui/SectionLabel";
+import { cn } from "@/lib/cn";
 import { validatePalaceData } from "@/lib/storage/local-storage";
 import { repairPalaceData, type RepairResult } from "@/lib/storage/repair";
 import {
@@ -33,6 +35,10 @@ const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
 const MAX_ROOMS = 500;
 const MAX_OBJECTS = 20_000;
 const MAX_CONNECTIONS = 50_000;
+
+const PANEL = "rounded-lg border border-border-hair bg-surface";
+const SEGMENTED =
+  "flex items-center gap-1 rounded-md border border-border-hair bg-surface-2/50 p-1";
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -189,25 +195,17 @@ export function SettingsBody() {
 
   return (
     <>
-      {/* Appearance */}
       <section className="mt-8 space-y-3">
-        <h2 className="font-display text-xl tracking-wide text-text">
-          Appearance
-        </h2>
-        <div className="divide-y divide-border-hair rounded-xl border border-border-hair bg-surface">
-          {/* Theme */}
-          <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+        <SectionLabel>Appearance</SectionLabel>
+        <div className={cn("divide-y divide-border-hair", PANEL)}>
+          <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-5">
             <div>
               <div className="text-sm text-text">Theme</div>
               <div className="text-xs text-muted">
                 {THEME_META[settings.theme].hint}.
               </div>
             </div>
-            <div
-              role="radiogroup"
-              aria-label="Theme"
-              className="flex items-center gap-1 rounded-lg border border-border-hair bg-surface-2/50 p-1"
-            >
+            <div role="radiogroup" aria-label="Theme" className={SEGMENTED}>
               {THEMES.map((theme) => {
                 const active = settings.theme === theme;
                 return (
@@ -218,11 +216,12 @@ export function SettingsBody() {
                     {...themeItem(THEMES.indexOf(theme))}
                     aria-checked={active}
                     onClick={() => updateSettings({ theme })}
-                    className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+                    className={cn(
+                      "h-9 rounded-sm px-3 text-sm transition-quiet",
                       active
                         ? "bg-surface-2 text-text"
-                        : "text-muted hover:text-text"
-                    }`}
+                        : "text-muted hover:text-text",
+                    )}
                   >
                     {THEME_META[theme].label}
                   </button>
@@ -231,8 +230,7 @@ export function SettingsBody() {
             </div>
           </div>
 
-          {/* Accent */}
-          <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-5">
             <div>
               <div className="text-sm text-text">Accent</div>
               <div className="text-xs text-muted">
@@ -257,41 +255,49 @@ export function SettingsBody() {
                     aria-label={meta.label}
                     title={meta.label}
                     onClick={() => updateSettings({ accent: key })}
-                    className="flex h-8 w-8 items-center justify-center rounded-full transition-transform duration-150 hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                    style={{
-                      backgroundColor: meta.swatch,
-                      boxShadow: active
-                        ? `0 0 0 2px var(--palace-surface), 0 0 0 4px ${meta.swatch}`
-                        : undefined,
-                    }}
+                    className="flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
                   >
-                    {active ? (
-                      <Check
-                        size={16}
-                        strokeWidth={2.5}
-                        color="var(--palace-on-accent)"
-                        aria-hidden
-                      />
-                    ) : null}
+                    {/*
+                      The button is a real 44px; the swatch inside it is the
+                      32px dot you see. Done this way rather than with
+                      `.hit-area` because these sit in a row 10px apart — four
+                      overlapping pseudo-element targets meant a tap between
+                      two swatches selected the wrong accent.
+                    */}
+                    <span
+                      className="flex h-8 w-8 items-center justify-center rounded-full transition-transform duration-150 hover:scale-110"
+                      style={{
+                        backgroundColor: meta.swatch,
+                        boxShadow: active
+                          ? `0 0 0 2px var(--palace-surface), 0 0 0 4px ${meta.swatch}`
+                          : undefined,
+                      }}
+                      aria-hidden
+                    >
+                      {active ? (
+                        // A literal, for the same reason `meta.swatch` is one:
+                        // these dots always paint the *dark* theme's accent
+                        // values, so the tick has to contrast against those
+                        // rather than against the current theme. Using
+                        // `--palace-on-accent` here put a near-white tick on
+                        // pale gold as soon as Parchment was selected.
+                        <Check size={16} strokeWidth={2.5} color="#17130d" />
+                      ) : null}
+                    </span>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Text size */}
-          <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-5">
             <div>
               <div className="text-sm text-text">Text size</div>
               <div className="text-xs text-muted">
                 Scale reading size across the whole palace.
               </div>
             </div>
-            <div
-              role="radiogroup"
-              aria-label="Text size"
-              className="flex items-center gap-1 rounded-lg border border-border-hair bg-surface-2/50 p-1"
-            >
+            <div role="radiogroup" aria-label="Text size" className={SEGMENTED}>
               {TEXT_SIZES.map((size) => {
                 const active = settings.textSize === size;
                 return (
@@ -302,11 +308,12 @@ export function SettingsBody() {
                     {...textSizeItem(TEXT_SIZES.indexOf(size))}
                     aria-checked={active}
                     onClick={() => updateSettings({ textSize: size })}
-                    className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+                    className={cn(
+                      "h-9 rounded-sm px-3 text-sm transition-quiet",
                       active
                         ? "bg-surface-2 text-text"
-                        : "text-muted hover:text-text"
-                    }`}
+                        : "text-muted hover:text-text",
+                    )}
                   >
                     {TEXT_SIZE_META[size].label}
                   </button>
@@ -315,8 +322,7 @@ export function SettingsBody() {
             </div>
           </div>
 
-          {/* Reduce motion */}
-          <div className="flex items-center justify-between gap-4 px-5 py-4">
+          <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-5">
             <div>
               <div className="text-sm text-text">Reduce motion</div>
               <div className="text-xs text-muted">
@@ -332,11 +338,8 @@ export function SettingsBody() {
         </div>
       </section>
 
-      {/* Data */}
       <section className="mt-10 space-y-3">
-        <h2 className="font-display text-xl tracking-wide text-text">
-          Palace data
-        </h2>
+        <SectionLabel>Palace data</SectionLabel>
 
         <div className="grid grid-cols-3 gap-3">
           {[
@@ -346,14 +349,12 @@ export function SettingsBody() {
           ].map((stat) => (
             <div
               key={stat.label}
-              className="rounded-xl border border-border-hair bg-surface px-4 py-3 text-center"
+              className={cn("px-4 py-3 text-center", PANEL)}
             >
-              <div className="font-display text-2xl text-text">
+              <div className="tabular font-display text-2xl font-bold tracking-tight text-text">
                 {stat.value}
               </div>
-              <div className="text-xs tracking-wide text-muted">
-                {stat.label}
-              </div>
+              <div className="text-xs text-muted">{stat.label}</div>
             </div>
           ))}
         </div>
@@ -363,10 +364,10 @@ export function SettingsBody() {
 
         <div className="flex flex-wrap gap-3 pt-1">
           <Button variant="primary" onClick={handleExport}>
-            <Download size={15} strokeWidth={1.75} /> Export JSON
+            <Download size={15} strokeWidth={1.75} aria-hidden /> Export JSON
           </Button>
           <Button variant="ghost" onClick={() => fileInputRef.current?.click()}>
-            <Upload size={15} strokeWidth={1.75} /> Import JSON
+            <Upload size={15} strokeWidth={1.75} aria-hidden /> Import JSON
           </Button>
           <input
             ref={fileInputRef}
@@ -379,12 +380,9 @@ export function SettingsBody() {
         </div>
       </section>
 
-      {/* Offline */}
       <section className="mt-10 space-y-3">
-        <h2 className="font-display text-xl tracking-wide text-text">
-          Offline
-        </h2>
-        <div className="space-y-3 rounded-xl border border-border-hair bg-surface p-5">
+        <SectionLabel>Offline</SectionLabel>
+        <div className={cn("space-y-3 p-4 sm:p-5", PANEL)}>
           <p className="text-sm text-muted">
             Your palace never leaves this browser, so it works with no
             connection at all. Install it to open in its own window.
@@ -393,12 +391,9 @@ export function SettingsBody() {
         </div>
       </section>
 
-      {/* Danger zone */}
       <section className="mt-10 space-y-3">
-        <h2 className="font-display text-xl tracking-wide text-text">
-          Danger zone
-        </h2>
-        <div className="space-y-3 rounded-xl border border-border-hair bg-surface p-5">
+        <SectionLabel>Danger zone</SectionLabel>
+        <div className={cn("space-y-3 p-4 sm:p-5", PANEL)}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="text-sm text-text">Reset to sample palace</div>
@@ -407,7 +402,7 @@ export function SettingsBody() {
               </div>
             </div>
             <Button variant="ghost" onClick={() => setConfirmReset(true)}>
-              <RotateCcw size={15} strokeWidth={1.75} /> Reset
+              <RotateCcw size={15} strokeWidth={1.75} aria-hidden /> Reset
             </Button>
           </div>
           <div className="h-px bg-border-hair" />
@@ -419,25 +414,24 @@ export function SettingsBody() {
               </div>
             </div>
             <Button variant="danger" onClick={() => setConfirmClear(true)}>
-              <Trash2 size={15} strokeWidth={1.75} /> Clear all
+              <Trash2 size={15} strokeWidth={1.75} aria-hidden /> Clear all
             </Button>
           </div>
         </div>
       </section>
 
-      {/* About */}
       <section className="mt-10 space-y-3">
-        <h2 className="font-display text-xl tracking-wide text-text">About</h2>
-        <div className="rounded-xl border border-border-hair bg-surface p-5">
+        <SectionLabel>About</SectionLabel>
+        <div className={cn("p-4 sm:p-5", PANEL)}>
           <p className="text-sm text-muted">
             <span className="text-text">Memory Palace</span> is a spatial home
             for everything you know — organise knowledge as rooms and objects
             inside a visual mansion. Version 1.0.
           </p>
           <div className="mt-5 border-t border-border-hair pt-5">
-            <h2 className="mb-1 font-display text-lg tracking-wide text-text">
+            <h3 className="mb-1 font-display text-base font-semibold tracking-tight text-text">
               Keyboard shortcuts
-            </h2>
+            </h3>
             <p className="mb-4 text-xs text-muted">
               Press <Kbd>?</Kbd> anywhere to bring this list up as a card.
             </p>
@@ -446,7 +440,6 @@ export function SettingsBody() {
         </div>
       </section>
 
-      {/* Import confirmation */}
       <Dialog
         open={pendingImport !== null}
         onClose={() => setPendingImport(null)}
@@ -485,8 +478,8 @@ export function SettingsBody() {
                 commits, rather than applied silently or used as grounds to
                 reject the whole file. */}
             {pendingImport.repairs.length > 0 ? (
-              <div className="mt-4 rounded-lg border border-border-hair bg-surface-2/60 p-3">
-                <p className="text-xs tracking-wide text-text">
+              <div className="mt-4 rounded-md border border-border-hair bg-surface-2/60 p-3">
+                <p className="text-xs text-text">
                   {pendingImport.repairs.length}{" "}
                   {pendingImport.repairs.length === 1 ? "thing" : "things"} will
                   be repaired on import:

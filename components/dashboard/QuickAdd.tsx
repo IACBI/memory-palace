@@ -9,6 +9,7 @@ import { OBJECT_TYPES, OBJECT_TYPE_META } from "@/lib/object-meta";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 
 /** Inline control to create an object without leaving the dashboard. */
 export function QuickAdd() {
@@ -39,7 +40,7 @@ export function QuickAdd() {
   if (rooms.length === 0) return null;
 
   return (
-    <div className="rounded-xl border border-border-hair bg-surface p-3">
+    <Card className="p-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <Input
           value={title}
@@ -51,39 +52,42 @@ export function QuickAdd() {
           aria-label="New object title"
           className="flex-1"
         />
-        <div className="flex gap-2">
-          <div className="w-28">
-            <Select
-              value={type}
-              onChange={(e) => setType(e.target.value as ObjectType)}
-              aria-label="Object type"
-            >
-              {OBJECT_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {OBJECT_TYPE_META[t].label}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div className="w-40">
-            <Select
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
-              aria-label="Room"
-            >
-              {rooms.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <Button variant="primary" onClick={submit} disabled={disabled}>
-            <Plus size={16} strokeWidth={2} />
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
+          <Select
+            value={type}
+            onChange={(e) => setType(e.target.value as ObjectType)}
+            aria-label="Object type"
+            className="sm:w-28"
+          >
+            {OBJECT_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {OBJECT_TYPE_META[t].label}
+              </option>
+            ))}
+          </Select>
+          <Select
+            value={roomId}
+            onChange={(e) => setRoomId(e.target.value)}
+            aria-label="Room"
+            className="sm:w-40"
+          >
+            {rooms.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </Select>
+          <Button
+            variant="primary"
+            onClick={submit}
+            disabled={disabled}
+            className="col-span-2 sm:col-auto"
+          >
+            <Plus size={16} strokeWidth={2} aria-hidden />
             Add
           </Button>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

@@ -47,7 +47,7 @@ export function SaveIndicator() {
 
   if (status === "error") {
     return (
-      <span className="flex shrink-0 items-center gap-1.5 rounded-md border border-danger/40 px-2 py-1 text-[11px] text-danger">
+      <span className="flex shrink-0 items-center gap-1.5 rounded-sm border border-danger/40 px-2 py-1 text-2xs text-danger">
         <CloudOff size={13} strokeWidth={1.75} aria-hidden />
         Not saved
       </span>
@@ -56,7 +56,7 @@ export function SaveIndicator() {
 
   return (
     <span
-      className="hidden shrink-0 items-center gap-1.5 text-[11px] text-muted sm:flex"
+      className="hidden shrink-0 items-center gap-1.5 text-2xs text-muted sm:flex"
       aria-live="polite"
     >
       {status === "pending" ? (

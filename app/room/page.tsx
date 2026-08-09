@@ -13,6 +13,8 @@ export const metadata: Metadata = {
  * (read client-side by RoomView) rather than a path segment, so the whole
  * app exports to fully static hosting and works for any room a visitor
  * creates — not only the ones known at build time.
+ *
+ * The `<Suspense>` boundary is required: `RoomView` calls `useSearchParams()`.
  */
 export default function RoomPage() {
   return (

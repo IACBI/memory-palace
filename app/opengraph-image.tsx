@@ -15,12 +15,12 @@ export default function OpengraphImage() {
   // Literal 8-digit hex rather than a runtime suffix: these are baked into a
   // PNG at build time and never go through the palette tokens.
   const rooms = [
-    { left: 80, top: 0, w: 190, h: 190, rail: "#c9a227", fill: "#c9a22722" },
-    { left: 290, top: 0, w: 130, h: 120, rail: "#7d3b3b", fill: "#7d3b3b22" },
-    { left: 290, top: 140, w: 130, h: 50, rail: "#4a6350", fill: "#4a635022" },
-    { left: 440, top: 0, w: 160, h: 190, rail: "#48566b", fill: "#48566b22" },
-    { left: 620, top: 0, w: 110, h: 90, rail: "#6e4a63", fill: "#6e4a6322" },
-    { left: 620, top: 110, w: 110, h: 80, rail: "#8a6a45", fill: "#8a6a4522" },
+    { left: 80, top: 0, w: 190, h: 190, rail: "#d9b25f", fill: "#d9b25f1f" },
+    { left: 290, top: 0, w: 130, h: 120, rail: "#e58f89", fill: "#e58f891f" },
+    { left: 290, top: 140, w: 130, h: 50, rail: "#79c9a2", fill: "#79c9a21f" },
+    { left: 440, top: 0, w: 160, h: 190, rail: "#8fb3e8", fill: "#8fb3e81f" },
+    { left: 620, top: 0, w: 110, h: 90, rail: "#c99ae0", fill: "#c99ae01f" },
+    { left: 620, top: 110, w: 110, h: 80, rail: "#d7a37e", fill: "#d7a37e1f" },
   ];
 
   return new ImageResponse(
@@ -31,18 +31,20 @@ export default function OpengraphImage() {
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
+        // The one warm light at the top of the room, same as the app shell.
         background:
-          "radial-gradient(120% 100% at 50% 0%, #1d1913 0%, #121110 60%)",
+          "radial-gradient(120% 100% at 50% 0%, #2a231a 0%, #0f0f11 60%)",
         padding: 72,
-        fontFamily: "Georgia, serif",
+        fontFamily: "system-ui, sans-serif",
       }}
     >
       <div style={{ display: "flex", flexDirection: "column" }}>
         <div
           style={{
             fontSize: 76,
-            color: "#e8e3d8",
-            letterSpacing: "0.01em",
+            fontWeight: 700,
+            color: "#eeeae4",
+            letterSpacing: "-0.02em",
             lineHeight: 1.05,
           }}
         >
@@ -51,14 +53,15 @@ export default function OpengraphImage() {
         <div
           style={{
             fontSize: 76,
-            color: "#c9a227",
-            letterSpacing: "0.01em",
+            fontWeight: 700,
+            color: "#f0b775",
+            letterSpacing: "-0.02em",
             lineHeight: 1.05,
           }}
         >
           Palace
         </div>
-        <div style={{ fontSize: 30, color: "#9a917f", marginTop: 22 }}>
+        <div style={{ fontSize: 30, color: "#a29b92", marginTop: 22 }}>
           A spatial home for everything you know.
         </div>
       </div>

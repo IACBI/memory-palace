@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { useRoomMap } from "@/lib/hooks/use-room-map";
+import { useElementSize } from "@/lib/hooks/use-element-size";
 import {
   forceSimulation,
   forceLink,
@@ -22,6 +23,7 @@ import {
   type SimulationLinkDatum,
 } from "d3-force";
 import { Maximize, Minus, Plus } from "lucide-react";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { usePalaceStore } from "@/lib/store";
 import { graphSignature } from "@/lib/graph-key";
 import {
@@ -33,6 +35,8 @@ import {
 import { linkPath } from "@/lib/canvas-links";
 import { prefersReducedMotion } from "@/lib/prefs";
 import { paletteColor } from "@/lib/palette";
+import { cn } from "@/lib/cn";
+import { IconButton } from "@/components/ui/IconButton";
 import type { KnowledgeObject, Room } from "@/lib/types";
 
 const WIDTH = 960;
@@ -97,7 +101,32 @@ export function GraphView({
 
   const roomById = useRoomMap(rooms);
 
-  // Neighbor adjacency for hover highlighting.
+  /**
+   * The drawing surface, measured.
+   *
+   * The SVG's user space is CSS pixels, and the `viewBox` is the measured box
+   * centred on the simulation's origin. A fixed `viewBox` could not be: with
+   * the default `preserveAspectRatio` a 960×640 box inside a wide, short
+   * container is scaled to *fit*, so the whole graph was drawn at whatever
+   * fraction the height allowed — about 79% on a laptop — and letterboxed with
+   * dead space down both sides. Tracking the container instead means one node
+   * is one size no matter the window, and the canvas is always full.
+   */
+  const { size: canvasSize, ref: canvasRef } = useElementSize<HTMLDivElement>();
+  const view = {
+    w: canvasSize.width > 0 ? canvasSize.width : WIDTH,
+    h: canvasSize.height > 0 ? canvasSize.height : HEIGHT,
+  };
+
+  // Read by `fitToView` and the pan handler without either depending on the
+  // measurement: `fitToView` is in the simulation effect's dependency list, so
+  // a new identity on every resize would tear the layout down and re-run it.
+  const viewRef = useRef(view);
+  useEffect(() => {
+    viewRef.current = view;
+  });
+
+  // Neighbour adjacency for hover highlighting.
   const neighbors = useMemo(() => {
     const map = new Map<string, Set<string>>();
     for (const c of connections) {
@@ -128,6 +157,18 @@ export function GraphView({
     [objects],
   );
 
+  // Counted once per data change rather than per room per render: the tick
+  // handler re-renders this component on every animation frame while the
+  // layout settles, and a scan per room per frame is rooms × objects of work
+  // for a number that only changes when `objects` does.
+  const objectCountByRoom = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const o of objects) {
+      counts.set(o.roomId, (counts.get(o.roomId) ?? 0) + 1);
+    }
+    return counts;
+  }, [objects]);
+
   // The simulation effect reads the latest data without depending on array
   // identity. Declared before that effect so it is already current when the
   // graph's shape changes — effects run in declaration order.
@@ -157,10 +198,11 @@ export function GraphView({
     const minY = Math.min(...ys) - padding;
     const maxY = Math.max(...ys) + padding;
 
+    const { w: viewW, h: viewH } = viewRef.current;
     const k = clamp(
       Math.min(
-        WIDTH / Math.max(1, maxX - minX),
-        HEIGHT / Math.max(1, maxY - minY),
+        viewW / Math.max(1, maxX - minX),
+        viewH / Math.max(1, maxY - minY),
       ),
       0.4,
       2,
@@ -346,7 +388,9 @@ export function GraphView({
   const onBgPointerMove = (e: React.PointerEvent) => {
     if (!roamRef.current) return;
     const svg = svgRef.current;
-    const scale = svg ? WIDTH / svg.getBoundingClientRect().width : 1;
+    const scale = svg
+      ? viewRef.current.w / svg.getBoundingClientRect().width
+      : 1;
     setTransform((t) => ({
       ...t,
       x: roamRef.current!.ox + (e.clientX - roamRef.current!.startX) * scale,
@@ -569,11 +613,14 @@ export function GraphView({
 
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
-      <div className="relative flex-1 overflow-hidden rounded-2xl border border-border-hair bg-surface/40">
+      <div
+        ref={canvasRef}
+        className="relative min-w-0 flex-1 overflow-hidden rounded-xl border border-border-hair bg-surface/40"
+      >
         <svg
           ref={svgRef}
-          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-          className="h-[70vh] w-full touch-none select-none"
+          viewBox={`${WIDTH / 2 - view.w / 2} ${HEIGHT / 2 - view.h / 2} ${view.w} ${view.h}`}
+          className="h-[64vh] min-h-96 w-full touch-none select-none lg:h-[76vh]"
           onPointerDown={onBgPointerDown}
           onPointerMove={onBgPointerMove}
           onPointerUp={onBgPointerUp}
@@ -590,7 +637,6 @@ export function GraphView({
           <g
             transform={`translate(${transform.x},${transform.y}) scale(${transform.k})`}
           >
-            {/* Links */}
             {links.map((link) => {
               const s =
                 typeof link.source === "object"
@@ -629,7 +675,7 @@ export function GraphView({
                       x={(s.x! + t.x!) / 2}
                       y={(s.y! + t.y!) / 2 - 4}
                       textAnchor="middle"
-                      className="fill-[var(--palace-muted)] text-[9px]"
+                      className="fill-[var(--palace-muted)] text-2xs"
                     >
                       {link.label}
                     </text>
@@ -638,7 +684,6 @@ export function GraphView({
               );
             })}
 
-            {/* Nodes */}
             {nodes.map((node) => {
               const room = roomById.get(node.roomId);
               const color = room
@@ -697,11 +742,12 @@ export function GraphView({
                     <text
                       x={r + 5}
                       y={4}
-                      className={
+                      className={cn(
+                        "text-2xs",
                         activeId === node.id
-                          ? "fill-[var(--palace-text)] text-[11px]"
-                          : "fill-[var(--palace-muted)] text-[10px]"
-                      }
+                          ? "fill-[var(--palace-text)]"
+                          : "fill-[var(--palace-muted)]",
+                      )}
                       style={{
                         paintOrder: "stroke",
                         stroke: "var(--palace-base)",
@@ -718,36 +764,21 @@ export function GraphView({
         </svg>
 
         {/* Visible controls: useful to mouse, touch and keyboard alike. */}
-        <div className="absolute right-3 bottom-3 flex flex-col gap-1 rounded-lg border border-border-hair bg-surface/90 p-1 backdrop-blur">
-          <button
-            type="button"
-            onClick={() => zoomBy(1.2)}
-            aria-label="Zoom in"
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-text"
-          >
+        <div className="absolute right-3 bottom-3 flex flex-col gap-1 rounded-md border border-border-hair bg-surface/90 p-1 backdrop-blur">
+          <IconButton label="Zoom in" onClick={() => zoomBy(1.2)}>
             <Plus size={15} strokeWidth={1.75} aria-hidden />
-          </button>
-          <button
-            type="button"
-            onClick={() => zoomBy(1 / 1.2)}
-            aria-label="Zoom out"
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-text"
-          >
+          </IconButton>
+          <IconButton label="Zoom out" onClick={() => zoomBy(1 / 1.2)}>
             <Minus size={15} strokeWidth={1.75} aria-hidden />
-          </button>
-          <button
-            type="button"
-            onClick={fitToView}
-            aria-label="Fit everything on screen"
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-text"
-          >
+          </IconButton>
+          <IconButton label="Fit everything on screen" onClick={fitToView}>
             <Maximize size={14} strokeWidth={1.75} aria-hidden />
-          </button>
+          </IconButton>
         </div>
 
         <p
           id={helpId}
-          className="pointer-events-none absolute bottom-3 left-3 max-w-[70%] text-[11px] text-muted"
+          className="pointer-events-none absolute bottom-3 left-3 max-w-[60%] text-2xs text-muted"
         >
           Ctrl and scroll to zoom · drag to pan · focus the graph and use arrow
           keys to walk between objects, Enter to open
@@ -759,27 +790,25 @@ export function GraphView({
         </span>
       </div>
 
-      {/* Legend */}
       <aside className="w-full shrink-0 lg:w-56">
-        <h2 className="mb-3 font-display text-lg tracking-wide text-text">
-          Rooms
-        </h2>
-        <ul className="space-y-1">
+        <SectionLabel>Rooms</SectionLabel>
+        <ul className="space-y-0.5">
           {rooms.map((room) => {
             const color = paletteColor(room.palette);
             const active = focusRooms.has(room.id);
-            const count = objects.filter((o) => o.roomId === room.id).length;
+            const count = objectCountByRoom.get(room.id) ?? 0;
             return (
               <li key={room.id}>
                 <button
                   type="button"
                   onClick={() => toggleRoom(room.id)}
                   aria-pressed={active}
-                  className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors ${
+                  className={cn(
+                    "flex min-h-11 w-full items-center gap-2 rounded-md px-2.5 text-left text-sm transition-quiet",
                     active
                       ? "bg-surface-2 text-text"
-                      : "text-muted hover:bg-surface-2/60 hover:text-text"
-                  }`}
+                      : "text-muted hover:bg-surface-2/60 hover:text-text",
+                  )}
                 >
                   <span
                     className="h-3 w-3 shrink-0 rounded-full"
@@ -787,7 +816,9 @@ export function GraphView({
                     aria-hidden
                   />
                   <span className="min-w-0 flex-1 truncate">{room.name}</span>
-                  <span className="shrink-0 text-xs text-muted">{count}</span>
+                  <span className="tabular shrink-0 text-xs text-muted">
+                    {count}
+                  </span>
                 </button>
               </li>
             );
@@ -797,7 +828,7 @@ export function GraphView({
           <button
             type="button"
             onClick={() => setFocusRooms(new Set())}
-            className="mt-2 px-2.5 text-xs text-muted transition-colors hover:text-text"
+            className="mt-2 h-9 px-2.5 text-xs text-muted transition-quiet hover:text-text"
           >
             Clear highlight
           </button>

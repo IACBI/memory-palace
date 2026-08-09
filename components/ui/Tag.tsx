@@ -17,7 +17,7 @@ export function Tag({
 }) {
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] leading-none text-text"
+      className="inline-flex items-center gap-1 rounded-full border py-0.5 pr-1 pl-2.5 text-2xs text-text"
       style={{
         borderColor: palette
           ? paletteTint(palette, "edge")
@@ -29,15 +29,21 @@ export function Tag({
     >
       <span className="truncate">{children}</span>
       {onRemove ? (
+        // 24px, meeting WCAG 2.5.8. Not the 44px the standalone controls get:
+        // tags wrap inline at an 8px gap, so a 44px target would overlap its
+        // neighbours and start swallowing their clicks. 2.5.8 exempts inline
+        // targets for exactly this reason.
         <button
           type="button"
           onClick={onRemove}
-          className="-mr-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-muted transition-colors hover:text-text"
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted transition-quiet hover:bg-surface hover:text-text"
           aria-label="Remove tag"
         >
-          <X size={11} strokeWidth={2} />
+          <X size={12} strokeWidth={2} />
         </button>
-      ) : null}
+      ) : (
+        <span className="w-1" aria-hidden />
+      )}
     </span>
   );
 }

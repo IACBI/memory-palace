@@ -37,7 +37,7 @@ export function TagInput({
 
   return (
     <div role="group" aria-labelledby={labelledBy}>
-      <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border-hair bg-surface px-2 py-2 focus-within:border-accent-dim">
+      <div className="flex min-h-11 flex-wrap items-center gap-1.5 rounded-md border border-border-control bg-surface px-2 py-1.5 focus-within:border-accent-dim">
         {value.map((tag) => (
           <Tag key={tag} onRemove={() => remove(tag)}>
             {tag}
@@ -55,7 +55,7 @@ export function TagInput({
             }
           }}
           placeholder={value.length === 0 ? "Add tags…" : ""}
-          className="min-w-[6rem] flex-1 bg-transparent px-1 py-0.5 text-sm text-text placeholder:text-muted focus:outline-none"
+          className="min-w-24 flex-1 bg-transparent px-1 py-1.5 text-sm text-text placeholder:text-muted focus:outline-none"
           aria-label="Add a tag"
         />
       </div>
@@ -66,7 +66,7 @@ export function TagInput({
               key={s}
               type="button"
               onClick={() => add(s)}
-              className="rounded-full border border-border-hair bg-surface-2 px-2 py-0.5 text-[11px] text-muted transition-colors hover:border-border-strong hover:text-text"
+              className="h-8 rounded-full border border-border-hair bg-surface-2 px-3 text-2xs text-muted transition-quiet hover:border-border-strong hover:text-text"
             >
               + {s}
             </button>

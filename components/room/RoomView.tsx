@@ -17,6 +17,7 @@ import { useToastStore } from "@/lib/toast-store";
 import { RoomIcon } from "@/components/RoomIcon";
 import { paletteColor, paletteTint } from "@/lib/palette";
 import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { RoomDialog, type RoomDraft } from "@/components/palace/RoomDialog";
@@ -228,21 +229,23 @@ export function RoomView() {
 
   if (!room) {
     return (
-      <div className="mx-auto max-w-3xl px-5 py-24 sm:px-8">
-        <div className="rounded-2xl border border-border-hair bg-surface p-8 text-center sm:p-12">
-          <h1 className="font-display text-3xl text-text">Room not found</h1>
-          <p className="mt-3 text-sm text-muted">
+      <div className="mx-auto max-w-3xl px-4 py-20 sm:px-8 sm:py-24">
+        <div className="rounded-xl border border-border-hair bg-surface p-8 text-center sm:p-12">
+          <h1 className="font-display text-3xl font-bold tracking-tight text-text sm:text-4xl">
+            Room not found
+          </h1>
+          <p className="mt-4 text-sm text-pretty text-muted">
             There is no room with the id{" "}
-            <code className="rounded bg-surface-2 px-1.5 py-0.5 text-xs text-text">
+            <code className="rounded-sm bg-surface-2 px-1.5 py-0.5 text-xs text-text">
               {roomId}
             </code>
             . It may have been deleted.
           </p>
           <Link
             href="/palace"
-            className="mt-6 inline-flex items-center gap-2 rounded-lg border border-border-strong px-4 py-2 text-sm text-text transition-colors hover:bg-surface-2"
+            className="mt-7 inline-flex h-11 items-center gap-2 rounded-md border border-border-strong px-4 text-sm text-text transition-quiet hover:border-accent-dim hover:bg-surface-2"
           >
-            <ArrowLeft size={16} strokeWidth={1.75} />
+            <ArrowLeft size={16} strokeWidth={1.75} aria-hidden />
             Back to the palace
           </Link>
         </div>
@@ -291,71 +294,90 @@ export function RoomView() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col">
-      {/* Header */}
-      <div className="border-b border-border-hair px-5 py-6 sm:px-8">
+    <div className="flex min-h-[calc(100vh-4rem)] flex-col">
+      {/*
+        Arrival. The room's own pigment washes the top of the screen, so
+        entering one reads as walking into a differently lit space rather than
+        as loading a page with a different title.
+      */}
+      <div
+        className="relative px-4 py-6 sm:px-8 sm:py-8"
+        style={{
+          backgroundImage: `linear-gradient(to bottom, ${paletteTint(room.palette, "wash")}, transparent)`,
+        }}
+      >
         <Link
           href="/palace"
-          className="mb-4 inline-flex items-center gap-2 text-sm text-muted transition-colors hover:text-text"
+          className="mb-5 inline-flex h-9 items-center gap-2 text-sm text-muted transition-quiet hover:text-text"
         >
-          <ArrowLeft size={16} strokeWidth={1.75} />
+          <ArrowLeft size={16} strokeWidth={1.75} aria-hidden />
           Palace
         </Link>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-start gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-5">
+          <div className="flex min-w-0 items-start gap-4">
             <span
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg"
               style={{
                 backgroundColor: paletteTint(room.palette, "chip"),
                 color,
               }}
             >
-              <RoomIcon name={room.icon} size={24} strokeWidth={1.75} />
+              <RoomIcon
+                name={room.icon}
+                size={24}
+                strokeWidth={1.75}
+                aria-hidden
+              />
             </span>
             <div className="min-w-0">
-              <h1 className="font-display text-3xl leading-none font-semibold tracking-wide text-text">
+              <h1 className="font-display text-3xl leading-tight font-bold tracking-tight text-balance text-text sm:text-4xl">
                 {room.name}
               </h1>
-              <p className="mt-1.5 max-w-xl text-sm text-muted">
+              <p className="mt-2.5 max-w-xl text-sm text-pretty text-muted">
                 {room.description}
               </p>
-              <p className="mt-1 text-xs tracking-widest text-muted uppercase">
+              <p className="tabular mt-2 text-2xs tracking-[0.18em] text-muted uppercase">
                 {objects.length} {objects.length === 1 ? "object" : "objects"}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)}>
-              <Pencil size={14} strokeWidth={1.75} />
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="ghost" onClick={() => setEditOpen(true)}>
+              <Pencil size={14} strokeWidth={1.75} aria-hidden />
               Edit
             </Button>
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() => setDeleteRoomOpen(true)}
-            >
-              <Trash2 size={14} strokeWidth={1.75} />
+            <Button variant="danger" onClick={() => setDeleteRoomOpen(true)}>
+              <Trash2 size={14} strokeWidth={1.75} aria-hidden />
               Delete
             </Button>
-            <Button variant="primary" size="sm" onClick={handleAddObject}>
-              <Plus size={16} strokeWidth={2} />
+            <Button variant="primary" onClick={handleAddObject}>
+              <Plus size={16} strokeWidth={2} aria-hidden />
               Add object
             </Button>
           </div>
         </div>
+        <div
+          className="absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-border-strong via-border-hair to-transparent sm:inset-x-8"
+          aria-hidden
+        />
       </div>
 
       {/* Spatial canvas */}
-      <div className="relative flex-1 overflow-hidden p-4 sm:p-6">
+      <div className="relative min-h-[60vh] flex-1 overflow-hidden p-3 sm:p-6">
         {/* Announces link progress to a screen reader without moving focus. */}
         <span aria-live="polite" className="sr-only">
           {announcement}
         </span>
 
         {linkSource ? (
-          <div className="motion-toast-in absolute inset-x-0 top-6 z-40 mx-auto flex w-fit items-center gap-3 rounded-full border border-accent-dim bg-surface px-4 py-2 text-sm shadow-[0_12px_40px_-8px_rgba(0,0,0,0.6)]">
-            <Spline size={15} strokeWidth={1.75} className="text-accent" />
-            <span className="text-text">
+          <div className="motion-toast-in absolute inset-x-3 top-5 z-[var(--z-overlay)] mx-auto flex w-fit max-w-[calc(100%-1.5rem)] items-center gap-3 rounded-full border border-accent-dim bg-surface px-4 py-2 text-sm shadow-overlay">
+            <Spline
+              size={15}
+              strokeWidth={1.75}
+              className="shrink-0 text-accent"
+              aria-hidden
+            />
+            <span className="min-w-0 truncate text-text">
               Connecting from{" "}
               <span className="text-accent">{linkSource.title}</span> — choose
               another object
@@ -363,7 +385,7 @@ export function RoomView() {
             <button
               type="button"
               onClick={cancelLink}
-              className="rounded-md px-2 py-0.5 text-xs text-muted transition-colors hover:bg-surface-2 hover:text-text"
+              className="h-8 shrink-0 rounded-md px-2 text-xs text-muted transition-quiet hover:bg-surface-2 hover:text-text"
             >
               Cancel
             </button>
@@ -378,7 +400,7 @@ export function RoomView() {
               hint="Add your first object and place it anywhere on the canvas."
               action={
                 <Button variant="primary" onClick={handleAddObject}>
-                  <Plus size={16} strokeWidth={2} />
+                  <Plus size={16} strokeWidth={2} aria-hidden />
                   Add object
                 </Button>
               }
@@ -387,7 +409,7 @@ export function RoomView() {
         ) : (
           <div
             ref={canvasRef}
-            className="room-canvas-grain relative h-full w-full rounded-2xl border border-border-hair"
+            className="room-canvas-grain relative h-full min-h-[60vh] w-full rounded-xl border border-border-hair"
             style={{
               backgroundColor: paletteTint(room.palette, "wash"),
               boxShadow: `inset 0 0 140px 10px ${paletteTint(room.palette, "wash")}`,
@@ -425,32 +447,29 @@ export function RoomView() {
                 editor, which is the keyboard path. */}
             {selectedConnection && selectedMidpoint ? (
               <div
-                className="motion-menu-in absolute z-30 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-lg border border-border-strong bg-surface px-1.5 py-1 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.6)]"
+                className="motion-menu-in absolute z-[var(--z-drawer)] flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-md border border-border-strong bg-surface px-1.5 py-1 shadow-overlay"
                 style={{ left: selectedMidpoint.x, top: selectedMidpoint.y }}
               >
                 <span className="max-w-40 truncate px-1.5 text-xs text-muted">
                   {selectedConnection.label || "Connection"}
                 </span>
-                <button
-                  type="button"
+                <IconButton
+                  label="Remove this connection"
+                  className="hover:text-danger"
                   onClick={() => {
                     removeConnection(selectedConnection.id);
                     setSelectedConnectionId(null);
                     addToast({ message: "Connection removed." });
                   }}
-                  className="flex h-6 w-6 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-danger"
-                  aria-label="Remove this connection"
                 >
-                  <Trash2 size={13} strokeWidth={1.75} />
-                </button>
-                <button
-                  type="button"
+                  <Trash2 size={13} strokeWidth={1.75} aria-hidden />
+                </IconButton>
+                <IconButton
+                  label="Dismiss"
                   onClick={() => setSelectedConnectionId(null)}
-                  className="flex h-6 w-6 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-text"
-                  aria-label="Dismiss"
                 >
-                  <X size={13} strokeWidth={1.75} />
-                </button>
+                  <X size={13} strokeWidth={1.75} aria-hidden />
+                </IconButton>
               </div>
             ) : null}
 

@@ -1,19 +1,30 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Inter } from "next/font/google";
+import { Instrument_Sans, Syne } from "next/font/google";
 import "./globals.css";
 import { StoreProvider } from "@/components/providers/StoreProvider";
 import { AppShell } from "@/components/shell/AppShell";
 import { DEFAULT_PREFS, PREFS_BOOTSTRAP_SCRIPT } from "@/lib/prefs";
 import { metaContentSecurityPolicy } from "@/lib/security-headers";
 
-const display = Cormorant_Garamond({
+/**
+ * Syne carries the headings and nothing else.
+ *
+ * It is a wide, architectural grotesque — the letterforms take up room, which
+ * is the whole argument for using it in an app about placing things in space.
+ * It is also eccentric enough to be tiring below about 20px, so it is confined
+ * to page titles, the brand and the large counts; everything the reader
+ * actually reads is set in Instrument Sans, a narrower grotesque that stays
+ * quiet at 13–16px.
+ *
+ * Both faces are variable, so neither ships a weight the app never uses.
+ */
+const display = Syne({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
-const sans = Inter({
+const sans = Instrument_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
   display: "swap",
@@ -66,10 +77,11 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   // The browser chrome follows the theme. These are the system-preference
-  // colours; the in-app override is applied by CSS `color-scheme` on :root.
+  // colours — --palace-base in each theme; the in-app override is applied by
+  // CSS `color-scheme` on :root.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#efe8da" },
-    { media: "(prefers-color-scheme: dark)", color: "#121110" },
+    { media: "(prefers-color-scheme: light)", color: "#f1ece3" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f0f11" },
   ],
   colorScheme: "dark light",
 };
@@ -107,7 +119,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: PREFS_BOOTSTRAP_SCRIPT }}
         />
       </head>
-      <body className="min-h-full bg-base text-text">
+      <body className="min-h-full bg-ground text-text">
         <StoreProvider>
           <AppShell>{children}</AppShell>
         </StoreProvider>

@@ -1,18 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { Menu } from "lucide-react";
+import { Menu as MenuIcon } from "lucide-react";
 import { SidebarContent } from "@/components/shell/SidebarContent";
+import { IconButton } from "@/components/ui/IconButton";
 import { useFocusTrap } from "@/lib/hooks/use-focus-trap";
 import { useDismissable } from "@/lib/hooks/use-dismissable";
 
 /**
- * The navigation drawer below the `lg` breakpoint.
+ * The navigation drawer below the `md` breakpoint, where there is no room for
+ * even the icon rail.
  *
  * Claims `aria-modal`, so it has to behave like one: Escape closes it, Tab
  * cycles inside it, and focus returns to the trigger on close. It previously
  * did none of those, leaving keyboard users tabbed out into the page behind an
  * overlay they could not dismiss.
+ *
+ * Its `SidebarContent` is only rendered while open, which also keeps exactly
+ * one `<nav aria-label="Main">` in the document at a time.
  */
 export function MobileDrawer() {
   const [open, setOpen] = useState(false);
@@ -21,18 +26,18 @@ export function MobileDrawer() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="Open navigation"
+      <IconButton
+        label="Open navigation"
+        variant="ghost"
         aria-expanded={open}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border-hair text-muted transition-colors hover:border-border-strong hover:text-text lg:hidden"
+        onClick={() => setOpen(true)}
+        className="md:hidden"
       >
-        <Menu size={18} strokeWidth={1.75} />
-      </button>
+        <MenuIcon size={18} strokeWidth={1.75} aria-hidden />
+      </IconButton>
 
       {open ? (
-        <div className="fixed inset-0 z-40 lg:hidden">
+        <div className="fixed inset-0 z-[var(--z-overlay)] md:hidden">
           <button
             type="button"
             aria-label="Close navigation"
@@ -42,7 +47,7 @@ export function MobileDrawer() {
           />
           <aside
             ref={panelRef}
-            className="motion-dialog-in relative flex h-full w-64 flex-col border-r border-border-strong bg-surface"
+            className="motion-dialog-in relative flex h-full w-72 max-w-[85vw] flex-col border-r border-border-strong bg-surface"
             role="dialog"
             aria-modal="true"
             aria-label="Navigation"

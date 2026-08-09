@@ -34,7 +34,7 @@ export function Highlight({
     parts.push(
       <mark
         key={`m${index}`}
-        className="rounded-[2px] bg-accent/25 text-text not-italic"
+        className="rounded-sm bg-accent/25 text-text not-italic"
       >
         {text.slice(range.start, range.end)}
       </mark>,

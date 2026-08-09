@@ -16,7 +16,7 @@ export function NewRoomButton() {
 
   return (
     <Button variant="primary" onClick={requestNewRoom}>
-      <Plus size={16} strokeWidth={2} />
+      <Plus size={16} strokeWidth={2} aria-hidden />
       Add room
     </Button>
   );

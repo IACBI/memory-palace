@@ -2,11 +2,17 @@
 
 import { Compass, Sparkles } from "lucide-react";
 import { usePalaceStore } from "@/lib/store";
+import { Kbd } from "@/components/ui/Kbd";
 
 /**
  * The choice a first-time visitor gets instead of silently inheriting the
  * sample palace. Someone else's six rooms appearing with no explanation made
  * the demo content look like the user's own data.
+ *
+ * The orientation line at the foot is deliberately part of this screen rather
+ * than a tour that runs after it. A modal walkthrough would stand between the
+ * reader and the palace at the exact moment they chose to go in, and it is the
+ * first thing anyone dismisses without reading.
  */
 export function FirstRun() {
   const hydrationState = usePalaceStore((state) => state.hydrationState);
@@ -15,7 +21,7 @@ export function FirstRun() {
   if (hydrationState !== "first-run") return null;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-base/95 px-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[var(--z-toast)] flex items-center justify-center overflow-y-auto bg-ground/95 px-5 py-10 backdrop-blur-sm">
       <div
         role="dialog"
         aria-modal="true"
@@ -26,7 +32,7 @@ export function FirstRun() {
             two h1s on one screen is a real navigation problem. */}
         <h2
           id="first-run-title"
-          className="font-display text-4xl leading-tight tracking-wide text-text"
+          className="font-display text-3xl leading-tight font-semibold tracking-tight text-text sm:text-4xl"
         >
           Welcome to your
           <span className="block text-accent">Memory Palace</span>
@@ -36,16 +42,16 @@ export function FirstRun() {
           floor plan, or walk through a furnished one first.
         </p>
 
-        <div className="mt-9 grid gap-3 sm:grid-cols-2">
+        <div className="mt-8 grid gap-3 sm:grid-cols-2">
           <button
             type="button"
             onClick={() => completeFirstRun("sample")}
-            className="group flex flex-col items-start gap-2 rounded-xl border border-border-strong bg-surface p-5 text-left transition-colors hover:border-accent-dim hover:bg-surface-2"
+            className="group flex flex-col items-start gap-2 rounded-lg border border-border-strong bg-surface p-5 text-left transition-quiet hover:border-accent-dim hover:bg-surface-2"
           >
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/15 text-accent">
+            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-accent/15 text-accent">
               <Compass size={18} strokeWidth={1.75} aria-hidden />
             </span>
-            <span className="font-display text-lg text-text">
+            <span className="font-display text-base font-semibold text-text">
               Explore a sample palace
             </span>
             <span className="text-xs leading-relaxed text-muted">
@@ -56,19 +62,36 @@ export function FirstRun() {
           <button
             type="button"
             onClick={() => completeFirstRun("empty")}
-            className="group flex flex-col items-start gap-2 rounded-xl border border-border-hair bg-surface p-5 text-left transition-colors hover:border-border-strong hover:bg-surface-2"
+            className="group flex flex-col items-start gap-2 rounded-lg border border-border-hair bg-surface p-5 text-left transition-quiet hover:border-border-strong hover:bg-surface-2"
           >
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-muted transition-colors group-hover:text-text">
+            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-surface-2 text-muted transition-quiet group-hover:text-text">
               <Sparkles size={18} strokeWidth={1.75} aria-hidden />
             </span>
-            <span className="font-display text-lg text-text">Start empty</span>
+            <span className="font-display text-base font-semibold text-text">
+              Start empty
+            </span>
             <span className="text-xs leading-relaxed text-muted">
               A blank floor plan. Build your first room from scratch.
             </span>
           </button>
         </div>
 
-        <p className="mt-7 text-[11px] tracking-wide text-muted">
+        {/* Each hint stays on one line and the row wraps between them; letting
+            a single hint break in half made the three read as six. */}
+        <ul className="mt-7 flex flex-col items-center gap-2 text-xs text-muted sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-5 sm:gap-y-2">
+          <li className="flex items-center gap-1.5 whitespace-nowrap">
+            Open a chamber to step inside it
+          </li>
+          <li className="flex items-center gap-1.5 whitespace-nowrap">
+            <Kbd>Ctrl</Kbd>
+            <Kbd>K</Kbd> searches everything
+          </li>
+          <li className="flex items-center gap-1.5 whitespace-nowrap">
+            <Kbd>?</Kbd> lists every shortcut
+          </li>
+        </ul>
+
+        <p className="mt-6 text-2xs tracking-wide text-muted">
           Everything stays in this browser. Nothing is uploaded.
         </p>
       </div>

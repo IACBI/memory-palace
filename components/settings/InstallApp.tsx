@@ -94,7 +94,7 @@ export function InstallApp() {
           setPrompt(null);
         }}
       >
-        <Download size={15} strokeWidth={1.75} /> Install app
+        <Download size={15} strokeWidth={1.75} aria-hidden /> Install app
       </Button>
     );
   }

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { RoomIcon } from "@/components/RoomIcon";
 import { ROOM_ICON_CHOICES, PALETTE_CHOICES } from "@/lib/icon-set";
 import { PALETTE_META, paletteColor } from "@/lib/palette";
+import { cn } from "@/lib/cn";
 import type { PaletteKey } from "@/lib/types";
 
 export interface RoomDraft {
@@ -23,6 +24,8 @@ const EMPTY: RoomDraft = {
   icon: ROOM_ICON_CHOICES[0],
   palette: "brass",
 };
+
+const FIELD_LABEL = "mb-1.5 block text-xs tracking-widest text-muted uppercase";
 
 export function RoomDialog({
   open,
@@ -79,10 +82,7 @@ export function RoomDialog({
     >
       <div className="space-y-4">
         <div>
-          <label
-            htmlFor={nameId}
-            className="mb-1.5 block text-xs tracking-widest text-muted uppercase"
-          >
+          <label htmlFor={nameId} className={FIELD_LABEL}>
             Name
           </label>
           <Input
@@ -97,10 +97,7 @@ export function RoomDialog({
         </div>
 
         <div>
-          <label
-            htmlFor={descriptionId}
-            className="mb-1.5 block text-xs tracking-widest text-muted uppercase"
-          >
+          <label htmlFor={descriptionId} className={FIELD_LABEL}>
             Description
           </label>
           <Textarea
@@ -115,10 +112,7 @@ export function RoomDialog({
         </div>
 
         <div>
-          <span
-            id={iconLabelId}
-            className="mb-1.5 block text-xs tracking-widest text-muted uppercase"
-          >
+          <span id={iconLabelId} className={FIELD_LABEL}>
             Icon
           </span>
           <div
@@ -135,13 +129,19 @@ export function RoomDialog({
                   onClick={() => setDraft((d) => ({ ...d, icon }))}
                   aria-pressed={active}
                   aria-label={icon}
-                  className={`flex h-10 items-center justify-center rounded-lg border transition-colors ${
+                  className={cn(
+                    "flex h-11 items-center justify-center rounded-md border transition-quiet",
                     active
                       ? "border-accent-dim bg-surface-2 text-accent"
-                      : "border-border-hair text-muted hover:border-border-strong hover:text-text"
-                  }`}
+                      : "border-border-hair text-muted hover:border-border-strong hover:text-text",
+                  )}
                 >
-                  <RoomIcon name={icon} size={18} strokeWidth={1.75} />
+                  <RoomIcon
+                    name={icon}
+                    size={18}
+                    strokeWidth={1.75}
+                    aria-hidden
+                  />
                 </button>
               );
             })}
@@ -149,10 +149,7 @@ export function RoomDialog({
         </div>
 
         <div>
-          <span
-            id={paletteLabelId}
-            className="mb-1.5 block text-xs tracking-widest text-muted uppercase"
-          >
+          <span id={paletteLabelId} className={FIELD_LABEL}>
             Palette
           </span>
           <div
@@ -169,15 +166,17 @@ export function RoomDialog({
                   onClick={() => setDraft((d) => ({ ...d, palette }))}
                   aria-pressed={active}
                   aria-label={PALETTE_META[palette].label}
-                  className={`flex h-10 items-center justify-center rounded-lg border transition-transform ${
+                  className={cn(
+                    "flex h-11 items-center justify-center rounded-md border transition-transform",
                     active
-                      ? "border-accent-dim scale-105"
-                      : "border-border-hair hover:border-border-strong"
-                  }`}
+                      ? "scale-105 border-accent-dim"
+                      : "border-border-hair hover:border-border-strong",
+                  )}
                 >
                   <span
                     className="h-5 w-5 rounded-full"
                     style={{ backgroundColor: paletteColor(palette) }}
+                    aria-hidden
                   />
                 </button>
               );

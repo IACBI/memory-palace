@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 
 /**
@@ -87,4 +88,50 @@ export async function openFirstObject(page: Page) {
   await openFirstRoom(page);
   await objectCards(page).first().click();
   await expect(page.getByRole("dialog", { name: /^Edit / })).toBeVisible();
+}
+
+/**
+ * Scans the current page for accessibility violations, once its entrance
+ * animations have finished.
+ *
+ * Mid-flight opacity reads as a contrast failure on every element, which says
+ * nothing about the interface at rest. Infinite animations — the skeleton
+ * shimmers — never finish, so they are excluded.
+ *
+ * Shared by `a11y.spec.ts` and `theme.spec.ts`, which each carried a verbatim
+ * copy: two places to update the day the wait condition needs to change, and
+ * no signal that they were meant to stay identical.
+ */
+export async function scan(page: Page) {
+  await waitForAnimations(page);
+  return new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+}
+
+/** The five fixed routes, scanned in both themes. */
+export const ROUTES = [
+  ["dashboard", "./"],
+  ["palace", "./palace/"],
+  ["library", "./library/"],
+  ["graph", "./graph/"],
+  ["settings", "./settings/"],
+] as const;
+
+/**
+ * Waits until every finite animation has stopped.
+ *
+ * Anything measured mid-flight is wrong in two different ways: entrance
+ * animations fade opacity up from 0, which axe scores as a contrast failure,
+ * and they arrive on `scale(0.98)`, which makes a 44px control measure 43.5px.
+ * Infinite animations — the skeleton shimmers — never finish, so they are
+ * excluded rather than waited on.
+ */
+export async function waitForAnimations(page: Page) {
+  await page.waitForFunction(() =>
+    document.getAnimations().every((animation) => {
+      const iterations = animation.effect?.getComputedTiming().iterations ?? 1;
+      return iterations === Infinity || animation.playState !== "running";
+    }),
+  );
 }

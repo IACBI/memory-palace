@@ -7,8 +7,11 @@ export const size = { width: 64, height: 64 };
 export const contentType = "image/png";
 
 /**
- * The app mark: a brass doorway on the palace's near-black. Generated rather
- * than checked in as a binary so it stays in step with the palette tokens.
+ * The app mark: a lamp-gold doorway in an unlit room. Generated rather than
+ * checked in as a binary so it stays in step with the palette — the two hexes
+ * below are `--palace-base` and `--palace-accent` from `app/globals.css`,
+ * written as literals because this is baked to a PNG at build time and never
+ * sees a custom property.
  */
 export default function Icon() {
   return new ImageResponse(
@@ -19,7 +22,7 @@ export default function Icon() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#121110",
+        background: "#0f0f11",
         borderRadius: 14,
       }}
     >
@@ -28,7 +31,7 @@ export default function Icon() {
         height="38"
         viewBox="0 0 24 24"
         fill="none"
-        stroke="#c9a227"
+        stroke="#f0b775"
         strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"

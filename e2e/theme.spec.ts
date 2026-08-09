@@ -1,6 +1,5 @@
-import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { openFirstRoom, openPalace } from "./helpers";
+import { openFirstRoom, openPalace, ROUTES, scan } from "./helpers";
 
 /**
  * Parchment is a second identity, not an inversion, so it gets the same
@@ -119,33 +118,6 @@ test("room palettes switch to their darkened variants", async ({ page }) => {
     expect(value).toMatch(/^#[0-9a-f]{6}$/);
   }
 });
-
-const ROUTES = [
-  ["dashboard", "./"],
-  ["palace", "./palace/"],
-  ["library", "./library/"],
-  ["graph", "./graph/"],
-  ["settings", "./settings/"],
-] as const;
-
-/**
- * Scans the current page, once its entrance animations have finished.
- *
- * Mid-flight opacity reads as a contrast failure on every element, which says
- * nothing about the interface at rest. Infinite animations — the skeleton
- * shimmers — never finish, so they are excluded.
- */
-async function scan(page: Page) {
-  await page.waitForFunction(() =>
-    document.getAnimations().every((animation) => {
-      const iterations = animation.effect?.getComputedTiming().iterations ?? 1;
-      return iterations === Infinity || animation.playState !== "running";
-    }),
-  );
-  return new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-    .analyze();
-}
 
 for (const [name, path] of ROUTES) {
   test(`${name} has no axe violations in Parchment`, async ({ page }) => {

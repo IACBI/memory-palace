@@ -8,5 +8,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
     },
+    sitemap: "https://iacbi.github.io/memory-palace/sitemap.xml",
   };
 }

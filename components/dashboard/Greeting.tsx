@@ -28,7 +28,7 @@ export function Greeting() {
   const hour = useSyncExternalStore(subscribe, getHour, getServerHour);
 
   return (
-    <h1 className="font-display text-4xl leading-none font-semibold tracking-wide text-text">
+    <h1 className="font-display text-4xl font-bold tracking-tight text-balance text-text sm:text-5xl">
       {hour === null ? "Welcome back" : greetingFor(hour)}
     </h1>
   );

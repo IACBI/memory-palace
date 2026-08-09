@@ -1,6 +1,13 @@
 "use client";
 
-/** An accessible on/off toggle. Brass when on, muted when off. */
+import { cn } from "@/lib/cn";
+
+/**
+ * An accessible on/off toggle.
+ *
+ * The track stays 24px tall so the control still reads as a switch, and
+ * `hit-area` lifts the tap target to the full 44px around it.
+ */
 export function Switch({
   checked,
   onChange,
@@ -17,16 +24,18 @@ export function Switch({
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors duration-200 ${
+      className={cn(
+        "hit-area inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-quiet",
         checked
           ? "border-accent-dim bg-accent/25"
-          : "border-border-control bg-surface-2"
-      }`}
+          : "border-border-control bg-surface-2",
+      )}
     >
       <span
-        className={`absolute left-0.5 h-5 w-5 rounded-full transition-transform duration-200 ${
-          checked ? "translate-x-5 bg-accent" : "translate-x-0 bg-muted"
-        }`}
+        className={cn(
+          "absolute left-0.5 h-5 w-5 rounded-full transition-[translate,background-color] duration-[var(--duration-base)] ease-[var(--ease-out-deep)]",
+          checked ? "translate-x-5 bg-accent" : "translate-x-0 bg-muted",
+        )}
         aria-hidden
       />
     </button>

@@ -2,16 +2,17 @@
 
 import { forwardRef } from "react";
 import { ChevronDown } from "lucide-react";
+import { cn } from "@/lib/cn";
 
 const SELECT_CLASS =
-  "w-full appearance-none rounded-lg border border-border-control bg-surface px-3 py-2 pr-9 text-sm text-text transition-colors duration-200 focus:border-accent-dim focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1";
+  "h-11 w-full appearance-none rounded-md border border-border-control bg-surface px-3.5 pr-9 text-sm text-text transition-quiet focus:border-accent-dim focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1";
 
 export const Select = forwardRef<
   HTMLSelectElement,
   React.SelectHTMLAttributes<HTMLSelectElement>
->(({ className = "", children, ...props }, ref) => (
+>(({ className, children, ...props }, ref) => (
   <div className="relative">
-    <select ref={ref} className={`${SELECT_CLASS} ${className}`} {...props}>
+    <select ref={ref} className={cn(SELECT_CLASS, className)} {...props}>
       {children}
     </select>
     <ChevronDown

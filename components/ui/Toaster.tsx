@@ -3,6 +3,7 @@
 import { useCallback, useEffect } from "react";
 import { X } from "lucide-react";
 import { useToastStore, type Toast } from "@/lib/toast-store";
+import { IconButton } from "./IconButton";
 
 const VARIANT_ACCENT: Record<Toast["variant"], string> = {
   default: "var(--palace-accent)",
@@ -27,13 +28,13 @@ function ToastRow({ toast }: { toast: Toast }) {
 
   return (
     <div
-      className="motion-toast-in pointer-events-auto flex items-center gap-3 rounded-xl border border-border-strong bg-surface px-4 py-3 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.6)]"
+      className="motion-toast-in pointer-events-auto flex items-center gap-2 rounded-lg border border-border-strong bg-surface py-2 pr-2 pl-4 shadow-overlay"
       style={{
         borderLeftColor: VARIANT_ACCENT[toast.variant],
         borderLeftWidth: 3,
       }}
     >
-      <span className="flex-1 text-sm text-text">{toast.message}</span>
+      <span className="flex-1 py-1 text-sm text-text">{toast.message}</span>
       {toast.action ? (
         <button
           type="button"
@@ -41,25 +42,21 @@ function ToastRow({ toast }: { toast: Toast }) {
             toast.action?.onClick();
             close();
           }}
-          className="rounded-md px-2 py-1 text-xs font-medium text-accent transition-colors hover:bg-surface-2"
+          className="h-9 rounded-md px-3 text-xs font-medium text-accent transition-quiet hover:bg-surface-2"
         >
           {toast.action.label}
         </button>
       ) : null}
-      <button
-        type="button"
-        onClick={close}
-        aria-label="Dismiss"
-        className="flex h-6 w-6 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-text"
-      >
-        <X size={14} strokeWidth={1.75} />
-      </button>
+      <IconButton label="Dismiss" onClick={close}>
+        <X size={14} strokeWidth={1.75} aria-hidden />
+      </IconButton>
     </div>
   );
 }
 
 /**
- * Renders active toasts in a fixed bottom-right stack.
+ * Renders active toasts in a fixed stack — bottom-centre on a phone, where the
+ * thumb is, and bottom-right from `sm` up.
  *
  * The live region is this container, which is in the document from the start.
  * `role="status"` used to sit on each row, inserted into the DOM at the same
@@ -75,7 +72,7 @@ export function Toaster() {
       role="status"
       aria-live="polite"
       aria-atomic="false"
-      className="pointer-events-none fixed right-4 bottom-4 z-[60] flex w-full max-w-sm flex-col gap-2"
+      className="pointer-events-none fixed inset-x-3 bottom-3 z-[var(--z-toast)] flex flex-col gap-2 sm:inset-x-auto sm:right-4 sm:bottom-4 sm:w-full sm:max-w-sm"
     >
       {toasts.map((toast) => (
         <ToastRow key={toast.id} toast={toast} />

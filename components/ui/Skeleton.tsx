@@ -1,6 +1,8 @@
+import { cn } from "@/lib/cn";
+
 /** A shimmering placeholder block. Server-renderable: no hooks, no handlers. */
 export function Skeleton({
-  className = "",
+  className,
   style,
 }: {
   className?: string;
@@ -8,7 +10,7 @@ export function Skeleton({
 }) {
   return (
     <div
-      className={`animate-pulse rounded-md bg-surface-2 ${className}`}
+      className={cn("animate-pulse rounded-md bg-surface-2", className)}
       style={style}
       aria-hidden
     />

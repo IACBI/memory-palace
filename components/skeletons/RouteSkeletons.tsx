@@ -19,32 +19,32 @@ function Region({ children }: { children: React.ReactNode }) {
 export function DashboardSkeleton() {
   return (
     <Region>
-      <Skeleton className="h-12 w-full rounded-xl" />
-      <div className="mt-10 grid grid-cols-1 gap-10 lg:grid-cols-3">
-        <div className="space-y-10 lg:col-span-2">
-          <section>
-            <Skeleton className="mb-4 h-6 w-40" />
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {Array.from({ length: 4 }, (_, i) => (
-                <Skeleton key={i} className="h-28 rounded-xl" />
-              ))}
-            </div>
-          </section>
-          <section>
-            <Skeleton className="mb-4 h-6 w-44" />
-            <Skeleton className="h-64 rounded-xl" />
-          </section>
+      <Skeleton className="mt-8 h-16 w-full rounded-lg sm:h-14" />
+      <section className="mt-12">
+        <Skeleton className="mb-4 h-3 w-36" />
+        {/* The threshold bands, at their real height so the doorway list does
+            not jump when the palace arrives. */}
+        <div className="space-y-1">
+          {Array.from({ length: 5 }, (_, i) => (
+            <Skeleton key={i} className="h-17 rounded-md" />
+          ))}
         </div>
-        <section>
-          <Skeleton className="mb-4 h-6 w-28" />
-          <Skeleton className="h-72 rounded-xl" />
+      </section>
+      <div className="mt-12 grid grid-cols-1 gap-10 lg:grid-cols-5 lg:gap-12">
+        <section className="lg:col-span-3">
+          <Skeleton className="mb-4 h-3 w-32" />
+          <Skeleton className="h-84 rounded-lg" />
+        </section>
+        <section className="lg:col-span-2">
+          <Skeleton className="mb-4 h-3 w-20" />
+          <Skeleton className="h-84 rounded-lg" />
         </section>
       </div>
     </Region>
   );
 }
 
-/** A floor plan of empty chambers — the strongest of the four visually. */
+/** A floor plan of empty chambers — the strongest of the six visually. */
 export function PalaceSkeleton() {
   const chambers = [
     { x: 0, y: 0, w: 3, h: 3 },
@@ -59,7 +59,7 @@ export function PalaceSkeleton() {
     <Region>
       <div className="mt-8 overflow-x-auto">
         <div
-          className="palace-floor relative mx-auto grid aspect-[3/2] w-full min-w-[680px] gap-2 rounded-2xl border border-border-hair p-3"
+          className="palace-floor relative mx-auto grid aspect-[3/2] w-full min-w-[680px] gap-2 rounded-xl border border-border-hair p-3"
           style={{
             gridTemplateColumns: `repeat(${GRID_COLS}, minmax(0, 1fr))`,
             gridTemplateRows: `repeat(${GRID_ROWS}, minmax(0, 1fr))`,
@@ -68,7 +68,7 @@ export function PalaceSkeleton() {
           {chambers.map((c, i) => (
             <Skeleton
               key={i}
-              className="rounded-xl"
+              className="rounded-lg"
               style={{
                 gridColumn: `${c.x + 1} / span ${c.w}`,
                 gridRow: `${c.y + 1} / span ${c.h}`,
@@ -84,16 +84,16 @@ export function PalaceSkeleton() {
 export function LibrarySkeleton() {
   return (
     <Region>
-      <div className="mt-6 flex flex-wrap gap-3">
-        <Skeleton className="h-9 w-full max-w-xs rounded-lg" />
-        <Skeleton className="h-9 w-32 rounded-lg" />
-        <Skeleton className="h-9 w-32 rounded-lg" />
+      <div className="mt-2 flex flex-wrap gap-3">
+        <Skeleton className="h-11 w-full max-w-xs rounded-md" />
+        <Skeleton className="h-11 w-32 rounded-md" />
+        <Skeleton className="h-11 w-32 rounded-md" />
       </div>
-      <div className="mt-4 overflow-hidden rounded-xl border border-border-hair">
+      <div className="mt-4 overflow-hidden rounded-lg border border-border-hair">
         {Array.from({ length: 8 }, (_, i) => (
           <Skeleton
             key={i}
-            className="h-14 rounded-none border-b border-base"
+            className="h-14 rounded-none border-b border-ground"
           />
         ))}
       </div>
@@ -124,7 +124,7 @@ export function GraphSkeleton() {
 
   return (
     <Region>
-      <div className="mt-6 overflow-hidden rounded-2xl border border-border-hair bg-surface/40">
+      <div className="mt-6 overflow-hidden rounded-xl border border-border-hair bg-surface/40">
         <svg
           viewBox="0 0 960 520"
           className="h-[60vh] w-full animate-pulse"
@@ -164,7 +164,7 @@ export function SettingsSkeleton() {
         {Array.from({ length: 4 }, (_, i) => (
           <div key={i}>
             <Skeleton className="mb-3 h-5 w-32" />
-            <Skeleton className="h-32 rounded-xl" />
+            <Skeleton className="h-32 rounded-lg" />
           </div>
         ))}
       </div>
@@ -175,18 +175,18 @@ export function SettingsSkeleton() {
 export function RoomSkeleton() {
   return (
     <Region>
-      <div className="border-b border-border-hair px-5 py-6 sm:px-8">
+      <div className="px-4 py-6 sm:px-8 sm:py-8">
         <Skeleton className="h-4 w-20" />
-        <div className="mt-4 flex items-start gap-4">
-          <Skeleton className="h-12 w-12 rounded-xl" />
+        <div className="mt-5 flex items-start gap-4">
+          <Skeleton className="h-12 w-12 rounded-lg" />
           <div className="flex-1">
-            <Skeleton className="h-9 w-64" />
-            <Skeleton className="mt-2 h-4 w-96 max-w-full" />
+            <Skeleton className="h-10 w-64 max-w-full" />
+            <Skeleton className="mt-2.5 h-4 w-96 max-w-full" />
           </div>
         </div>
       </div>
       <div className="p-4 sm:p-6">
-        <Skeleton className="h-[60vh] rounded-2xl" />
+        <Skeleton className="h-[60vh] rounded-xl" />
       </div>
     </Region>
   );

@@ -1,178 +1,265 @@
 @import "tailwindcss";
 
 /*
- * Memory Palace — dark, atmospheric theme.
- * Warm near-black surfaces, aged-brass accent, six muted room palettes.
+ * Memory Palace — "Eşik" (threshold).
+ *
+ * The premise: this is a place with one light in it. The ground is cool
+ * neutral smoke; everything that matters is warm, because it is lit. That
+ * pairing — cool room, warm light — is what makes the interface read as a
+ * space rather than as a dark colour scheme. Ornament is almost absent. Depth,
+ * light and type do the work.
+ *
+ * Two rules govern everything below, and both are enforced by tests:
+ *
+ *  1. `test/lib/contrast.test.ts` parses this file directly. The theme blocks
+ *     must keep the exact selector spellings used here, must contain no nested
+ *     braces, and must express their tokens as #rrggbb or rgb()/rgba() — never
+ *     color-mix() or a var() indirection, which the parser cannot resolve.
+ *     The main `:root` block must also stay the first `:root {` in the file.
+ *  2. Every --palace-* / --palette-* declared in :root must be redeclared under
+ *     [data-theme="parchment"]. A token left behind inherits a value tuned for
+ *     a dark ground, which is how one element ends up invisible on paper.
+ *
+ * The scales that are not colour (--space is Tailwind's own, --text-*,
+ * --radius-*, --z-*, --hit-min, and the motion system) deliberately avoid the
+ * --palace- prefix so they are not swept into that second rule: they do not
+ * vary by theme.
  */
 
 :root {
-  /* Base surfaces */
-  --palace-base: #121110;
-  --palace-surface: #1a1815;
-  --palace-surface-2: #221f1b;
+  /* The room. Neutral graphite with the faintest cool cast — deliberately not
+     indigo, which is what the previous identity used and what makes a dark
+     theme read as "blue" instead of as an unlit space. */
+  --palace-base: #0f0f11;
+  --palace-surface: #17171a;
+  --palace-surface-2: #202024;
 
-  /* Hairlines & lines */
-  --palace-border: rgba(232, 227, 216, 0.08);
-  --palace-border-strong: rgba(232, 227, 216, 0.14);
+  /* Hairlines. Decorative dividers, which WCAG 1.4.11 does not cover. */
+  --palace-border: rgba(238, 234, 228, 0.08);
+  --palace-border-strong: rgba(238, 234, 228, 0.14);
 
-  /* Form-control boundaries only. The hairlines above are decorative dividers,
-     which WCAG 1.4.11 does not cover; the visible edge of an input, select or
-     switch is a UI component boundary and needs 3:1. Raising the hairline
-     itself would flatten the whole atmosphere for no accessibility gain.
-     rgba(232,227,216,0.38) over --palace-surface computes to 3.05:1. */
-  --palace-border-control: rgba(232, 227, 216, 0.38);
+  /* Form-control boundaries. The visible edge of an input, select or switch is
+     a UI component boundary and does need 3:1. This composites to 3.62:1 over
+     --palace-surface; raising the hairlines above instead would flatten the
+     whole atmosphere for no accessibility gain. */
+  --palace-border-control: rgba(238, 234, 228, 0.42);
 
-  /* Text */
-  --palace-text: #e8e3d8;
-  --palace-muted: #9a917f;
+  /* Text is warm where the ground is cool: lit paper, not grey-on-grey. */
+  --palace-text: #eeeae4;
+  --palace-muted: #a29b92;
 
-  /* Accent — aged brass by default; user-swappable via [data-accent]. */
-  --palace-accent: #c9a227;
-  --palace-accent-hover: #dcb843;
-  --palace-accent-dim: #8a6f1f;
-  /* The soft candle-glow cast by accent surfaces (buttons, hovered cards). */
-  --palace-accent-glow: rgba(201, 162, 39, 0.5);
+  /* The light itself. Lamp gold rather than a saturated brand hue — the accent
+     in this identity is illumination, so it belongs to the same family as the
+     glow on a hovered surface. User-swappable via [data-accent]. */
+  --palace-accent: #f0b775;
+  --palace-accent-hover: #f8cd97;
+  --palace-accent-dim: #9a7448;
+  --palace-accent-glow: rgba(240, 183, 117, 0.42);
 
-  /* Label colour for text sitting on an accent fill. Every accent above is
-     contrast-checked against this value at WCAG AA. */
-  --palace-on-accent: #1a1410;
+  /* Label colour for text sitting on an accent fill. Every accent in this file
+     is contrast-checked against this value at WCAG AA. */
+  --palace-on-accent: #17130d;
 
-  /* Danger — a legible brick-rose for destructive text/icons (deep oxblood
-     stays for fills and room tints, where contrast isn't a factor). ~6.5:1. */
-  --palace-danger: #d18b82;
+  /* Destructive text and icons, legible on the dark surfaces (~7.6:1). */
+  --palace-danger: #f0a09a;
 
   /*
-   * Six room palette accents: muted and desaturated, but each light enough to
-   * carry an icon glyph at WCAG 1.4.11's 3:1 against every surface it can sit
-   * on. Four of them used to sit between 2.1:1 and 2.7:1, which made the room
-   * glyphs genuinely hard to make out on the darkest cards. They are lifted by
-   * the smallest amount that clears the bar, so the palette still reads as
-   * candlelit rather than neon. Verified in test/lib/contrast.test.ts.
+   * Depth. Two shadows and a spill.
+   *
+   * `raise` and `overlay` are cast shadows; `spill` is the pool of warm light a
+   * lit surface throws onto the ground around it, and is what the threshold
+   * bands and hovered chambers use instead of a border colour change.
    */
-  --palette-brass: #c9a227;
-  --palette-oxblood: #935c5c;
-  --palette-forest: #59705f;
-  --palette-ink: #606c7e;
-  --palette-plum: #816277;
-  --palette-umber: #8a6a45;
+  --palace-shadow-raise:
+    0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 28px -12px rgba(0, 0, 0, 0.7);
+  --palace-shadow-overlay: 0 32px 90px -20px rgba(0, 0, 0, 0.8);
+  --palace-shadow-spill:
+    0 0 0 1px rgba(240, 183, 117, 0.14),
+    0 10px 40px -16px rgba(240, 183, 117, 0.3);
 
-  --palace-selection: rgba(201, 162, 39, 0.28);
+  /*
+   * Six room pigments. Each is light enough to carry an icon glyph at WCAG
+   * 1.4.11's 3:1 against every surface it can sit on — including surface-2,
+   * which is the lightest ground in this theme and therefore the binding one.
+   * Warm-shifted as a set, as though seen under the lamp above.
+   * Verified in test/lib/contrast.test.ts.
+   */
+  --palette-brass: #d9b25f;
+  --palette-oxblood: #e58f89;
+  --palette-forest: #79c9a2;
+  --palette-ink: #8fb3e8;
+  --palette-plum: #c99ae0;
+  --palette-umber: #d7a37e;
 
-  /* Motion. Durations pair with an easing: things arriving decelerate, things
-     leaving accelerate and take roughly half the time. */
+  --palace-selection: rgba(240, 183, 117, 0.26);
+
+  /*
+   * Motion.
+   *
+   * One easing family. Things arriving decelerate into place; things leaving
+   * accelerate away and take roughly half as long. Nothing in this app
+   * overshoots or bounces — a room you walk into does not wobble.
+   */
   --duration-instant: 80ms;
   --duration-quick: 140ms;
-  --duration-base: 200ms;
-  --duration-slow: 280ms;
+  --duration-base: 220ms;
+  --duration-slow: 320ms;
+  --duration-arrive: 460ms;
   --ease-out-quiet: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-out-deep: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-quick: cubic-bezier(0.4, 0, 1, 1);
 
-  /* How far a surface travels, by its size. Zeroed under reduced motion. */
+  /* How far a surface travels, by its size. Zeroed under reduced motion, which
+     is the single lever that removes movement while leaving opacity and colour
+     feedback intact. */
   --motion-distance-sm: 6px;
-  --motion-distance-md: 8px;
-  --motion-distance-lg: 10px;
+  --motion-distance-md: 10px;
+  --motion-distance-lg: 16px;
   --motion-distance-full: 100%;
+
+  /* The step between two staggered arrivals. Collapsed under reduced motion so
+     a list appears at once rather than dealing itself out. */
+  --motion-stagger: 45ms;
+
+  /*
+   * Stacking order, in one place. These used to be nine ad hoc values between
+   * z-0 and z-[80] spread across the tree, which is impossible to reason about
+   * the moment two overlays are open at once.
+   */
+  --z-raised: 10;
+  --z-sticky: 20;
+  --z-drawer: 30;
+  --z-overlay: 40;
+  --z-toast: 50;
+
+  /*
+   * The minimum hit area for anything a finger has to land on. WCAG 2.5.5 asks
+   * for 44px; nothing in this app is exempt, so controls that look smaller than
+   * this expand their target rather than their box.
+   */
+  --hit-min: 44px;
 }
 
 /*
  * Parchment — the light theme.
  *
- * Not an inversion. The palace's identity is candlelight on near-black, and
- * flipping its lightness channel gives grey-on-white with none of it. This is
- * warm paper and brown ink: the same room palettes darkened until they read
- * against a light ground, glows traded for shadows, grain kept but lighter.
+ * Not an inversion. Flipping the lightness channel of an unlit room gives a
+ * flat grey with none of its character. This is the same space with the
+ * shutters open: warm plaster, daylight instead of lamplight, and the accent
+ * inverted from a light fill with a dark label to a dark fill with a pale one.
  *
- * Every pairing here is checked by `test/lib/contrast.test.ts`, which computes
- * the ratios from these very declarations.
+ * `e2e/theme.spec.ts` reads the painted background here and requires every
+ * channel above 180 and red ahead of blue — this ground is warm on purpose.
  */
 :root[data-theme="parchment"] {
-  --palace-base: #efe8da;
-  --palace-surface: #f9f4ea;
-  --palace-surface-2: #e9e1d1;
+  --palace-base: #f1ece3;
+  --palace-surface: #faf6ef;
+  --palace-surface-2: #e8e1d5;
 
-  --palace-border: rgba(58, 46, 30, 0.1);
-  --palace-border-strong: rgba(58, 46, 30, 0.18);
-  --palace-border-control: rgba(58, 46, 30, 0.55);
+  --palace-border: rgba(26, 24, 21, 0.1);
+  --palace-border-strong: rgba(26, 24, 21, 0.18);
+  --palace-border-control: rgba(26, 24, 21, 0.55);
 
-  --palace-text: #2a2318;
-  --palace-muted: #5d5342;
+  --palace-text: #1a1815;
+  --palace-muted: #5c564d;
 
-  --palace-accent: #7a5c10;
-  --palace-accent-hover: #5f4708;
-  --palace-accent-dim: #a08a4a;
-  /* A cast shadow rather than a glow: light surfaces do not emit. */
-  --palace-accent-glow: rgba(58, 46, 30, 0.22);
+  --palace-accent: #8a4f16;
+  --palace-accent-hover: #6d3d0f;
+  --palace-accent-dim: #b08a5e;
+  /* Daylight does not glow, it casts. */
+  --palace-accent-glow: rgba(26, 24, 21, 0.2);
 
-  /* Inverted with the accent — paper on ink, not ink on ink. */
-  --palace-on-accent: #f9f4ea;
+  /* Inverted with the accent — plaster on bronze, not bronze on plaster. */
+  --palace-on-accent: #faf6ef;
 
-  --palace-danger: #8f2f24;
+  --palace-danger: #a32017;
 
-  /* The same six rooms, darkened until each carries against paper. */
-  --palette-brass: #7a5c10;
-  --palette-oxblood: #7d2f2f;
-  --palette-forest: #33523d;
-  --palette-ink: #33435c;
-  --palette-plum: #5a3450;
-  --palette-umber: #6d4c22;
+  --palace-shadow-raise:
+    0 1px 2px rgba(26, 24, 21, 0.08), 0 6px 20px -14px rgba(26, 24, 21, 0.3);
+  --palace-shadow-overlay: 0 32px 70px -24px rgba(26, 24, 21, 0.35);
+  --palace-shadow-spill:
+    0 0 0 1px rgba(138, 79, 22, 0.18), 0 10px 30px -18px rgba(26, 24, 21, 0.3);
 
-  --palace-selection: rgba(122, 92, 16, 0.24);
+  /* The same six pigments, driven down until each carries against plaster. */
+  --palette-brass: #6d5310;
+  --palette-oxblood: #7d2b2b;
+  --palette-forest: #24513b;
+  --palette-ink: #294066;
+  --palette-plum: #573a68;
+  --palette-umber: #6b4526;
+
+  --palace-selection: rgba(138, 79, 22, 0.2);
 }
 
 /*
- * Accent themes. Each stays muted and atmospheric, and every accent is
- * luminous enough to carry the dark button label (#1a1410) at WCAG AA.
- * Brass is the default and lives in :root above.
+ * Accent themes — the colour of the light. Each is luminous enough in its own
+ * theme to carry the label colour (--palace-on-accent) at WCAG AA in both of
+ * its states. Lamp gold is the default and lives in :root above under the
+ * historical key "brass" — the accent keys are persisted inside saved palaces,
+ * so they outlive any repaint and must never be renamed to match a hue.
  */
 :root[data-accent="copper"] {
-  --palace-accent: #cf9560;
-  --palace-accent-hover: #e0a875;
-  --palace-accent-dim: #8f6238;
-  --palace-accent-glow: rgba(207, 149, 96, 0.5);
-  --palace-selection: rgba(207, 149, 96, 0.28);
+  --palace-accent: #f0a05e;
+  --palace-accent-hover: #f7b880;
+  --palace-accent-dim: #96603a;
+  --palace-accent-glow: rgba(240, 160, 94, 0.42);
+  --palace-shadow-spill:
+    0 0 0 1px rgba(240, 160, 94, 0.14),
+    0 10px 40px -16px rgba(240, 160, 94, 0.3);
+  --palace-selection: rgba(240, 160, 94, 0.26);
 }
 
 :root[data-accent="sage"] {
-  --palace-accent: #a3b58c;
-  --palace-accent-hover: #b8c8a2;
-  --palace-accent-dim: #6e7f5a;
-  --palace-accent-glow: rgba(163, 181, 140, 0.45);
-  --palace-selection: rgba(163, 181, 140, 0.26);
+  --palace-accent: #8fd3ba;
+  --palace-accent-hover: #a9e0cb;
+  --palace-accent-dim: #558975;
+  --palace-accent-glow: rgba(143, 211, 186, 0.4);
+  --palace-shadow-spill:
+    0 0 0 1px rgba(143, 211, 186, 0.14),
+    0 10px 40px -16px rgba(143, 211, 186, 0.28);
+  --palace-selection: rgba(143, 211, 186, 0.24);
 }
 
 :root[data-accent="slate"] {
-  --palace-accent: #aab6c6;
-  --palace-accent-hover: #c1cbd8;
-  --palace-accent-dim: #6f7c8f;
-  --palace-accent-glow: rgba(170, 182, 198, 0.45);
-  --palace-selection: rgba(170, 182, 198, 0.26);
+  --palace-accent: #b0bccd;
+  --palace-accent-hover: #c6d0dd;
+  --palace-accent-dim: #74808f;
+  --palace-accent-glow: rgba(176, 188, 205, 0.4);
+  --palace-shadow-spill:
+    0 0 0 1px rgba(176, 188, 205, 0.14),
+    0 10px 40px -16px rgba(176, 188, 205, 0.28);
+  --palace-selection: rgba(176, 188, 205, 0.24);
 }
 
 /*
- * The same four accents, darkened for paper.
- *
- * On the dark theme an accent is a light fill carrying dark text; here it is
- * a dark fill carrying paper-coloured text, so the luminance has to move the
- * other way. Higher specificity than the blocks above, so order is irrelevant.
+ * The same three accents, driven down for daylight. Higher specificity than
+ * the blocks above, so source order is irrelevant.
  */
 :root[data-theme="parchment"][data-accent="copper"] {
   --palace-accent: #8a4a17;
   --palace-accent-hover: #6d3a11;
   --palace-accent-dim: #b5825a;
-  --palace-selection: rgba(138, 74, 23, 0.22);
+  --palace-shadow-spill:
+    0 0 0 1px rgba(138, 74, 23, 0.18), 0 10px 30px -18px rgba(26, 24, 21, 0.3);
+  --palace-selection: rgba(138, 74, 23, 0.2);
 }
 
 :root[data-theme="parchment"][data-accent="sage"] {
-  --palace-accent: #465730;
-  --palace-accent-hover: #354424;
-  --palace-accent-dim: #869670;
-  --palace-selection: rgba(70, 87, 48, 0.22);
+  --palace-accent: #1f5a4d;
+  --palace-accent-hover: #164439;
+  --palace-accent-dim: #6e9c91;
+  --palace-shadow-spill:
+    0 0 0 1px rgba(31, 90, 77, 0.18), 0 10px 30px -18px rgba(26, 24, 21, 0.3);
+  --palace-selection: rgba(31, 90, 77, 0.2);
 }
 
 :root[data-theme="parchment"][data-accent="slate"] {
   --palace-accent: #3c4859;
   --palace-accent-hover: #2e3846;
   --palace-accent-dim: #7a8698;
-  --palace-selection: rgba(60, 72, 89, 0.22);
+  --palace-shadow-spill:
+    0 0 0 1px rgba(60, 72, 89, 0.18), 0 10px 30px -18px rgba(26, 24, 21, 0.3);
+  --palace-selection: rgba(60, 72, 89, 0.2);
 }
 
 /* Reading size — scales everything expressed in rem. Medium (16px) is the
@@ -186,7 +273,17 @@
 }
 
 @theme inline {
-  --color-base: var(--palace-base);
+  /*
+   * `ground`, not `base`.
+   *
+   * Tailwind's `text-*` namespace serves both `--color-*` and `--text-*`, so a
+   * colour called `base` and the type scale's `base` step both compile to a
+   * `.text-base` rule. The colour won, and every `text-base` in the app was
+   * silently setting `color: var(--palace-base)` — near-black text on a
+   * near-black ground, which axe caught at a contrast ratio of 1.05:1. Any
+   * colour token sharing a name with a font-size step has the same problem.
+   */
+  --color-ground: var(--palace-base);
   --color-surface: var(--palace-surface);
   --color-surface-2: var(--palace-surface-2);
 
@@ -211,7 +308,48 @@
   --color-plum: var(--palette-plum);
   --color-umber: var(--palette-umber);
 
-  --font-display: var(--font-display), Georgia, "Times New Roman", serif;
+  /* Depth, themed. `shadow-raise` on cards, `shadow-overlay` on dialogs,
+     `shadow-spill` on a surface the light has reached. */
+  --shadow-raise: var(--palace-shadow-raise);
+  --shadow-overlay: var(--palace-shadow-overlay);
+  --shadow-spill: var(--palace-shadow-spill);
+
+  /*
+   * Type scale. `2xs` exists because the interface genuinely needs a step below
+   * `xs` for metadata, and it was previously written as a hand-rolled
+   * `text-[11px]` in twenty-three places. `5xl` is new: this identity carries
+   * its screens on one large display line, and 3rem was not enough of a jump
+   * from `3xl` to read as deliberate.
+   */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1.45;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.55;
+  --text-base: 1rem;
+  --text-base--line-height: 1.6;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.5;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.35;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 1.2;
+  --text-3xl: 2.25rem;
+  --text-3xl--line-height: 1.1;
+  --text-4xl: 3rem;
+  --text-4xl--line-height: 1.03;
+  --text-5xl: 4rem;
+  --text-5xl--line-height: 0.98;
+
+  /* Corner radii. Tight on controls, softer on the large volumes — a doorway
+     is square, a room is not a pill. */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 1rem;
+
+  --font-display: var(--font-display), "Segoe UI", system-ui, sans-serif;
   --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -233,13 +371,42 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* Counts, timestamps and coordinates line up in columns rather than shifting
+   as their digits change. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * The two transitions the interface actually uses.
+ *
+ * Written as utilities so the timing of every hover and focus state in the app
+ * is set by the tokens above rather than by whichever Tailwind duration a call
+ * site happened to type. `transition-quiet` is feedback that changes how a
+ * surface looks; `transition-lift` is feedback that changes where it sits, and
+ * is the only one that needs compositing.
+ */
+@utility transition-quiet {
+  transition-property:
+    color, background-color, border-color, box-shadow, opacity, outline-color;
+  transition-duration: var(--duration-base);
+  transition-timing-function: var(--ease-out-quiet);
+}
+
+@utility transition-lift {
+  transition-property:
+    color, background-color, border-color, box-shadow, opacity, translate, scale;
+  transition-duration: var(--duration-base);
+  transition-timing-function: var(--ease-out-deep);
+}
+
 /* Selection */
 ::selection {
   background: var(--palace-selection);
   color: var(--palace-text);
 }
 
-/* Focus rings — brass, visible only for keyboard users */
+/* Focus rings — the light, visible only for keyboard users */
 :focus-visible {
   outline: 2px solid var(--palace-accent);
   outline-offset: 2px;
@@ -269,59 +436,199 @@ body {
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(232, 227, 216, 0.22);
+  background-color: rgba(238, 234, 228, 0.22);
   background-clip: padding-box;
 }
 
 :root[data-theme="parchment"] *::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(58, 46, 30, 0.3);
+  background-color: rgba(26, 24, 21, 0.3);
   background-clip: padding-box;
 }
 
-/* Atmospheric floor-plan surface: warm base + vignette + faint grain */
-.palace-floor {
-  background-color: #17140f;
-  background-image:
-    radial-gradient(
-      120% 100% at 50% 0%,
-      rgba(201, 162, 39, 0.06),
-      transparent 60%
-    ),
-    radial-gradient(
-      140% 120% at 50% 120%,
-      rgba(0, 0, 0, 0.55),
-      transparent 55%
-    ),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
-  box-shadow: inset 0 0 120px 20px rgba(0, 0, 0, 0.45);
+/*
+ * Expands a control's hit area to --hit-min without changing how big it looks.
+ * The pseudo-element is centred on the control and sits above it, so a finger
+ * landing near a 24px icon still lands on the button.
+ *
+ * `position: relative` is applied alongside it rather than assumed, because the
+ * pseudo-element is positioned against the control itself.
+ *
+ * ONLY for controls that stand alone. The expanded target reaches outside the
+ * element's own box, so two of these side by side overlap and a press landing
+ * between them activates whichever paints last — the accent swatches (32px,
+ * 10px apart) and the graph's zoom stack (36px, 4px apart) both did exactly
+ * that. A control in a cluster should be given a real 44px box instead; that
+ * is why `components/ui/IconButton.tsx` is sized rather than expanded.
+ */
+.hit-area {
+  position: relative;
+}
+
+.hit-area::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  min-width: var(--hit-min);
+  min-height: var(--hit-min);
+  width: 100%;
+  height: 100%;
 }
 
 /*
- * The floor plan on paper: the vignette becomes a soft edge shadow rather than
- * a black well, and the grain drops to a third of its strength — the same
- * amount of noise that reads as candlelit texture on near-black reads as a
- * dirty screen on a light ground.
+ * The threshold — this identity's one signature.
+ *
+ * A room presented as a doorway. At rest it is a hairline and a short tick of
+ * light at its leading edge. On approach the tick grows into a full jamb and
+ * warm light spills across the band, so the affordance is "a way in" rather
+ * than "a clickable card". Both layers are pseudo-elements behind the content,
+ * so nothing here can intercept a pointer or reach the accessibility tree.
+ *
+ * `--threshold-light` and `--threshold-edge` are set per room from
+ * `lib/palette.ts`, which returns color-mix() expressions — never a string
+ * that something could append an alpha to.
  */
-:root[data-theme="parchment"] .palace-floor {
-  background-color: #eae2d2;
-  background-image:
-    radial-gradient(
-      120% 100% at 50% 0%,
-      rgba(122, 92, 16, 0.07),
-      transparent 60%
-    ),
-    radial-gradient(
-      140% 120% at 50% 120%,
-      rgba(58, 46, 30, 0.12),
-      transparent 55%
-    ),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.012'/%3E%3C/svg%3E");
-  box-shadow: inset 0 0 90px 10px rgba(58, 46, 30, 0.1);
+.threshold {
+  position: relative;
+  isolation: isolate;
 }
 
-/* Room detail canvas: subtle grain overlay on top of palette tint */
+.threshold::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    90deg,
+    var(--threshold-light, transparent),
+    transparent 55%
+  );
+  opacity: 0;
+  transition: opacity var(--duration-base) var(--ease-out-quiet);
+}
+
+.threshold::after {
+  content: "";
+  position: absolute;
+  /* Physical `left`, not `inset-inline-start`, to match the physical `90deg`
+     of the spill above. Half-logical is worse than either: in an RTL document
+     the jamb would sit on one edge and its light pour from the other. */
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  z-index: -1;
+  background: var(--threshold-edge, var(--palace-border-strong));
+  scale: 1 0.28;
+  transition:
+    scale var(--duration-slow) var(--ease-out-deep),
+    background var(--duration-base) var(--ease-out-quiet);
+}
+
+.threshold:hover::before,
+.threshold:focus-within::before {
+  opacity: 1;
+}
+
+.threshold:hover::after,
+.threshold:focus-within::after {
+  scale: 1 1;
+  background: var(--threshold-edge-lit, var(--palace-accent));
+}
+
+/*
+ * The floor plan: a lit floor.
+ *
+ * A pool of warm light from above, the ground falling away at the bottom
+ * edge, and a faint square ruling so a room's placement reads as a position
+ * rather than as a card in a grid. Two repeating gradients rather than the
+ * inline feTurbulence SVG data URI this replaced: nothing to parse, scales to
+ * any density, and no base64 payload in the stylesheet.
+ */
+.palace-floor {
+  background-color: #121215;
+  background-image:
+    radial-gradient(
+      120% 90% at 50% -10%,
+      rgba(240, 183, 117, 0.09),
+      transparent 62%
+    ),
+    radial-gradient(
+      150% 130% at 50% 125%,
+      rgba(0, 0, 0, 0.62),
+      transparent 58%
+    ),
+    repeating-linear-gradient(
+      to right,
+      rgba(238, 234, 228, 0.04) 0 1px,
+      transparent 1px 56px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      rgba(238, 234, 228, 0.04) 0 1px,
+      transparent 1px 56px
+    );
+  box-shadow: inset 0 0 140px 24px rgba(0, 0, 0, 0.45);
+}
+
+/*
+ * The same floor in daylight: the pool of light becomes an open shutter, and
+ * the ruling darkens instead of lightening.
+ */
+:root[data-theme="parchment"] .palace-floor {
+  background-color: #ece6dc;
+  background-image:
+    radial-gradient(
+      120% 90% at 50% -10%,
+      rgba(255, 255, 255, 0.75),
+      transparent 62%
+    ),
+    radial-gradient(
+      150% 130% at 50% 125%,
+      rgba(26, 24, 21, 0.1),
+      transparent 58%
+    ),
+    repeating-linear-gradient(
+      to right,
+      rgba(26, 24, 21, 0.06) 0 1px,
+      transparent 1px 56px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      rgba(26, 24, 21, 0.06) 0 1px,
+      transparent 1px 56px
+    );
+  box-shadow: inset 0 0 90px 12px rgba(26, 24, 21, 0.07);
+}
+
+/* Room detail canvas: the same ruling at half the pitch, over a pigment wash. */
 .room-canvas-grain {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      rgba(238, 234, 228, 0.03) 0 1px,
+      transparent 1px 28px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      rgba(238, 234, 228, 0.03) 0 1px,
+      transparent 1px 28px
+    );
+}
+
+:root[data-theme="parchment"] .room-canvas-grain {
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      rgba(26, 24, 21, 0.045) 0 1px,
+      transparent 1px 28px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      rgba(26, 24, 21, 0.045) 0 1px,
+      transparent 1px 28px
+    );
 }
 
 /*
@@ -329,13 +636,12 @@ body {
  *
  * Surfaces name the role they play (`motion-dialog-in`) rather than reaching
  * for a keyframe and a duration, so the timing of the whole app is set here.
- * Travel distance scales with the size of the surface: a toast slides 10px, a
- * dialog 8px, a slide-over its full width.
+ * Travel distance scales with the size of the surface: a toast rises 16px, a
+ * dialog 10px, a slide-over its full width.
  *
  * The `--motion-distance-*` variables are the single lever reduced motion
  * pulls. Collapsing them removes movement while leaving opacity and colour
- * feedback intact — "less movement", not "no feedback", which is what the
- * previous blanket `animation-duration: 0.001ms` override produced.
+ * feedback intact — "less movement", not "no feedback".
  *
  * Exits are entrances-only for now: driving an exit needs the surface to stay
  * mounted after it closes, and the render-phase state update that requires did
@@ -345,7 +651,7 @@ body {
 @keyframes dialogIn {
   from {
     opacity: 0;
-    transform: translateY(var(--motion-distance-md)) scale(0.98);
+    transform: translateY(var(--motion-distance-md)) scale(0.985);
   }
   to {
     opacity: 1;
@@ -382,31 +688,49 @@ body {
   }
 }
 
-/* Page transition — a quiet rise-and-fade as each screen mounts. */
-@keyframes pageIn {
+/*
+ * Arrival — the screen coming towards the reader rather than sliding in from
+ * a side. The scale is barely perceptible on its own; paired with the rise it
+ * is what makes a navigation read as moving through a doorway.
+ */
+@keyframes arrive {
   from {
     opacity: 0;
-    transform: translateY(var(--motion-distance-sm));
+    transform: translateY(var(--motion-distance-md)) scale(0.994);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
+/* Page transition — every routed screen arrives the same way. */
 .page-enter {
-  animation: pageIn var(--duration-base) var(--ease-out-quiet);
+  animation: arrive var(--duration-arrive) var(--ease-out-deep) both;
+}
+
+/*
+ * A list dealing itself out, one item at a time.
+ *
+ * The caller sets `--i` to the item's index. It is capped at the call site
+ * rather than here: an uncapped stagger on a long list is both bad design —
+ * the last row arrives seconds late — and a test hazard, because
+ * `e2e/helpers.ts` waits for every finite animation to finish before scanning.
+ */
+.arrive-item {
+  animation: arrive var(--duration-slow) var(--ease-out-deep) both;
+  animation-delay: calc(var(--i, 0) * var(--motion-stagger));
 }
 
 /* Named entrances, so components ask for a role rather than a keyframe. */
 .motion-dialog-in {
-  animation: dialogIn var(--duration-slow) var(--ease-out-quiet);
+  animation: dialogIn var(--duration-slow) var(--ease-out-deep);
 }
 .motion-toast-in {
   animation: toastIn var(--duration-base) var(--ease-out-quiet);
 }
 .motion-slide-over-in {
-  animation: slideOverIn var(--duration-slow) var(--ease-out-quiet);
+  animation: slideOverIn var(--duration-slow) var(--ease-out-deep);
 }
 .motion-fade-in {
   animation: fadeIn var(--duration-base) var(--ease-out-quiet);
@@ -416,11 +740,71 @@ body {
 }
 
 /*
+ * The lamp travelling across the wordmark.
+ *
+ * The same idea as `.threshold`: the light is a pseudo-element at `z-index: -1`
+ * inside an `isolation: isolate` context, so it stays out of the pointer path
+ * and the accessibility tree, and the text's own colour is never touched. That
+ * last part is why this is a glow *behind* the letters rather than a gradient
+ * clipped to them — `background-clip: text` needs a transparent fill colour,
+ * which is exactly the thing the contrast scan reads.
+ *
+ * Long rest, short pass: the sweep takes about a fifth of the cycle and the
+ * rest of it is still. A wordmark that pulses continuously is the kind of
+ * movement you end up hiding, so the light behaves like a lamp someone walked
+ * past rather than a loading indicator. Deliberately infinite —
+ * `e2e/helpers.ts` waits only on finite animations, so a looping decoration
+ * does not stall the axe pass.
+ */
+@keyframes lampSweep {
+  0%,
+  6% {
+    background-position: -60% 0;
+    opacity: 0;
+  }
+  14% {
+    opacity: 1;
+  }
+  26% {
+    opacity: 1;
+  }
+  34%,
+  100% {
+    background-position: 160% 0;
+    opacity: 0;
+  }
+}
+
+.lamp-sweep {
+  position: relative;
+  isolation: isolate;
+}
+
+.lamp-sweep::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -0.4rem -0.9rem;
+  border-radius: var(--radius-lg);
+  background-image: linear-gradient(
+    100deg,
+    transparent 38%,
+    var(--palace-accent-glow) 50%,
+    transparent 62%
+  );
+  background-repeat: no-repeat;
+  background-size: 260% 100%;
+  opacity: 0;
+  pointer-events: none;
+  animation: lampSweep 8s var(--ease-out-quiet) infinite;
+}
+
+/*
  * Reduced motion, via the OS preference or the in-app toggle.
  *
- * Movement is removed by collapsing the distance variables; durations stay so
- * hover and focus feedback still reads as a transition rather than a snap.
- * Only the long entrances are shortened.
+ * Movement is removed by collapsing the distance variables and the stagger
+ * step; durations stay so hover and focus feedback still reads as a transition
+ * rather than a snap. Only the long entrances are shortened.
  */
 @media (prefers-reduced-motion: reduce) {
   :root {
@@ -428,12 +812,21 @@ body {
     --motion-distance-md: 0px;
     --motion-distance-lg: 0px;
     --motion-distance-full: 0px;
+    --motion-stagger: 0ms;
+    --duration-arrive: var(--duration-base);
     --duration-slow: var(--duration-quick);
     --duration-base: var(--duration-quick);
   }
 
   * {
     scroll-behavior: auto !important;
+  }
+
+  /* The wordmark's light is decoration, not feedback: it is removed outright
+     rather than shortened. */
+  .lamp-sweep::before {
+    animation: none;
+    opacity: 0;
   }
 }
 
@@ -442,7 +835,14 @@ body {
   --motion-distance-md: 0px;
   --motion-distance-lg: 0px;
   --motion-distance-full: 0px;
+  --motion-stagger: 0ms;
+  --duration-arrive: var(--duration-base);
   --duration-slow: var(--duration-quick);
   --duration-base: var(--duration-quick);
   scroll-behavior: auto;
+}
+
+:root[data-reduce-motion="true"] .lamp-sweep::before {
+  animation: none;
+  opacity: 0;
 }

@@ -1,10 +1,11 @@
 import { OBJECT_TYPE_META } from "@/lib/object-meta";
 import { paletteColor, paletteTint } from "@/lib/palette";
 import type { ObjectType, PaletteKey } from "@/lib/types";
+import { cn } from "@/lib/cn";
 
 const SIZES = {
-  sm: { box: "h-7 w-7 rounded-md", icon: 14 },
-  md: { box: "h-8 w-8 rounded-md", icon: 15 },
+  sm: { box: "h-7 w-7", icon: 14 },
+  md: { box: "h-9 w-9", icon: 16 },
 } as const;
 
 /**
@@ -28,7 +29,10 @@ export function ObjectGlyph({
 
   return (
     <span
-      className={`flex shrink-0 items-center justify-center ${box}`}
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-md",
+        box,
+      )}
       style={{
         backgroundColor: paletteTint(palette, "chip"),
         color: paletteColor(palette),

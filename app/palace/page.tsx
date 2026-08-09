@@ -11,10 +11,10 @@ export const metadata: Metadata = {
 
 export default function PalacePage() {
   return (
-    <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-10">
       <PageHeader
         title="The Palace"
-        subtitle="Your rooms, laid out as a floor plan. Click a chamber to enter."
+        subtitle="Your rooms, laid out as a floor plan. Open a chamber to enter."
       >
         <NewRoomButton />
       </PageHeader>

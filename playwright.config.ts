@@ -12,6 +12,20 @@ import { defineConfig, devices } from "@playwright/test";
  * `npm run test:e2e` builds the export first and the server build second, so
  * both `out/` and `.next` are present and valid when the servers start.
  */
+
+/**
+ * Ports, overridable for local runs.
+ *
+ * `reuseExistingServer` is on outside CI, so whatever already answers on these
+ * ports is what the suite tests. When another project's dev server holds 3000,
+ * every `server` test fails against a stranger's HTML and reads as ~85 product
+ * bugs. Overriding the port sidesteps that without stopping someone else's
+ * work: `PW_SERVER_PORT=3100 npx playwright test`. CI passes neither and keeps
+ * the defaults.
+ */
+const SERVER_PORT = process.env.PW_SERVER_PORT ?? "3000";
+const EXPORT_PORT = process.env.PW_EXPORT_PORT ?? "4173";
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -41,27 +55,30 @@ export default defineConfig({
     // (`./palace/`) and resolve correctly under the export's base path.
     {
       name: "server",
-      use: { ...devices["Desktop Chrome"], baseURL: "http://localhost:3000/" },
+      use: {
+        ...devices["Desktop Chrome"],
+        baseURL: `http://localhost:${SERVER_PORT}/`,
+      },
     },
     {
       name: "export",
       use: {
         ...devices["Desktop Chrome"],
-        baseURL: "http://localhost:4173/memory-palace/",
+        baseURL: `http://localhost:${EXPORT_PORT}/memory-palace/`,
       },
     },
   ],
 
   webServer: [
     {
-      command: "npm run start",
-      url: "http://localhost:3000",
+      command: `npm run start -- --port ${SERVER_PORT}`,
+      url: `http://localhost:${SERVER_PORT}`,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
     },
     {
-      command: "npm run serve:export",
-      url: "http://localhost:4173/memory-palace/",
+      command: `npm run serve:export -- --port ${EXPORT_PORT}`,
+      url: `http://localhost:${EXPORT_PORT}/memory-palace/`,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
     },

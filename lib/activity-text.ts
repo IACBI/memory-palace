@@ -50,7 +50,13 @@ export function relativeTime(iso: string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.round(hours / 24);
   if (days < 30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString(undefined, {
+  // Explicitly en-US, not the reader's locale. Everything above this line is
+  // English ("3d ago"), and these two formats share a column in the library
+  // and the activity feed — leaving the fallback to `undefined` put "2 Şub"
+  // directly under "22d ago" for anyone whose browser was not set to English.
+  // The app's interface language is English; the README is the multilingual
+  // surface, not this.
+  return new Date(iso).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
   });

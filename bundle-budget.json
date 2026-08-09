@@ -1,4 +1,4 @@
 {
-  "_comment": "First-load gzipped JS for /, enforced by scripts/check-bundle.mjs. Measured at 213,883 B after removing the lucide namespace import; ~10% headroom. Raise deliberately, with a note on what grew.",
+  "_comment": "First-load gzipped JS for /, enforced by scripts/check-bundle.mjs. Measured at 219,626 B (214.5 KB) for the Eşik rebuild, against 219,040 B for the Observatory one before it — a repaint, so it moved almost nothing: the new SectionLabel and RoomThreshold components are a few hundred bytes and the rest of the work was CSS and tokens, which this budget does not count. The typeface change (Space Grotesk + Inter -> Syne + Instrument Sans) is likewise invisible here; next/font emits CSS and woff2, not JS. 15 KB of headroom. Raise deliberately, with a note on what grew.",
   "firstLoadGzipBytes": 235000
 }

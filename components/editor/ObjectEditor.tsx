@@ -16,10 +16,12 @@ import { useToastStore } from "@/lib/toast-store";
 import type { KnowledgeObject, ObjectType } from "@/lib/types";
 import { OBJECT_TYPE_META, OBJECT_TYPES } from "@/lib/object-meta";
 import { paletteColor } from "@/lib/palette";
+import { cn } from "@/lib/cn";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { TagInput } from "./TagInput";
 import { RelationshipPicker } from "./RelationshipPicker";
@@ -35,6 +37,8 @@ interface TextDraft {
   url: string;
   fileName: string;
 }
+
+const FIELD_LABEL = "mb-1.5 block text-xs tracking-widest text-muted uppercase";
 
 /**
  * Mounts the editor panel for whichever object is open.
@@ -160,11 +164,15 @@ function ObjectEditorPanel({ objectId }: { objectId: string }) {
   const room = rooms.find((r) => r.id === object.roomId);
   const accent = room ? paletteColor(room.palette) : "var(--palace-accent)";
 
+  // One pass over `objects` instead of a scan per connection: this runs on
+  // every keystroke, and the panel is open over the whole palace's objects.
+  const objectsById = new Map(objects.map((o) => [o.id, o]));
+
   const objectConnections = connections
     .filter((c) => c.fromId === object.id || c.toId === object.id)
     .map((c) => {
       const otherId = c.fromId === object.id ? c.toId : c.fromId;
-      return { connection: c, other: objects.find((o) => o.id === otherId) };
+      return { connection: c, other: objectsById.get(otherId) };
     })
     .filter((entry) => entry.other);
 
@@ -196,7 +204,7 @@ function ObjectEditorPanel({ objectId }: { objectId: string }) {
     <>
       {/* Backdrop — dims on mobile, click closes everywhere */}
       <div
-        className="motion-fade-in fixed inset-0 z-40 bg-black/50 md:bg-black/20"
+        className="motion-fade-in fixed inset-0 z-[var(--z-overlay)] bg-black/50 md:bg-black/20"
         onClick={closePanel}
         aria-hidden
       />
@@ -206,64 +214,53 @@ function ObjectEditorPanel({ objectId }: { objectId: string }) {
         role="dialog"
         aria-modal="true"
         aria-label={`Edit ${object.title || "object"}`}
-        className="motion-slide-over-in fixed top-0 right-0 z-50 flex h-full w-full max-w-[420px] flex-col border-l border-border-strong bg-surface"
+        className="motion-slide-over-in fixed top-0 right-0 z-[var(--z-toast)] flex h-full w-full flex-col border-l border-border-strong bg-surface sm:max-w-105"
         style={{
           boxShadow: `inset 4px 0 0 0 ${accent}, -24px 0 80px -24px rgba(0,0,0,0.8)`,
         }}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between gap-2 border-b border-border-hair px-5 py-4">
-          <div className="flex items-center gap-2 text-xs text-muted">
+        <div className="flex items-center justify-between gap-2 border-b border-border-hair px-4 py-3 sm:px-5">
+          <div className="flex min-w-0 items-center gap-2 text-xs text-muted">
             {room ? (
               <>
                 <span
-                  className="h-2 w-2 rounded-full"
+                  className="h-2 w-2 shrink-0 rounded-full"
                   style={{ backgroundColor: accent }}
                   aria-hidden
                 />
-                <span>{room.name}</span>
+                <span className="truncate">{room.name}</span>
               </>
             ) : (
               <span>Object</span>
             )}
             <span
-              className={`ml-2 inline-flex items-center gap-1 text-accent transition-opacity duration-300 ${
-                saved ? "opacity-100" : "opacity-0"
-              }`}
+              className={cn(
+                "ml-2 inline-flex shrink-0 items-center gap-1 text-accent transition-opacity duration-300",
+                saved ? "opacity-100" : "opacity-0",
+              )}
               aria-live="polite"
             >
-              <Check size={12} strokeWidth={2.25} /> Saved
+              <Check size={12} strokeWidth={2.25} aria-hidden /> Saved
             </span>
           </div>
-          <button
-            type="button"
-            onClick={closePanel}
-            aria-label="Close editor"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-2 hover:text-text"
-          >
-            <X size={16} strokeWidth={1.75} />
-          </button>
+          <IconButton label="Close editor" onClick={closePanel}>
+            <X size={16} strokeWidth={1.75} aria-hidden />
+          </IconButton>
         </div>
 
-        {/* Body */}
-        <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
-          {/* Title */}
+        <div className="flex-1 space-y-5 overflow-y-auto px-4 py-5 sm:px-5">
           <Input
             ref={titleRef}
             value={draft.title}
             onChange={(e) => editText({ title: e.target.value })}
             onBlur={text.flush}
             placeholder="Untitled"
-            className="!text-lg font-display"
+            className="font-display text-lg! font-medium"
             aria-label="Title"
           />
 
-          {/* Type selector */}
           <div>
-            <span
-              id={typeLabelId}
-              className="mb-1.5 block text-xs tracking-widest text-muted uppercase"
-            >
+            <span id={typeLabelId} className={FIELD_LABEL}>
               Type
             </span>
             <div
@@ -281,13 +278,14 @@ function ObjectEditorPanel({ objectId }: { objectId: string }) {
                     type="button"
                     onClick={() => commit({ type: type as ObjectType })}
                     aria-pressed={active}
-                    className={`flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-[11px] transition-colors ${
+                    className={cn(
+                      "flex min-h-14 flex-col items-center justify-center gap-1 rounded-md border px-2 py-2 text-2xs transition-quiet",
                       active
                         ? "border-accent-dim bg-surface-2 text-text"
-                        : "border-border-hair text-muted hover:border-border-strong hover:text-text"
-                    }`}
+                        : "border-border-hair text-muted hover:border-border-strong hover:text-text",
+                    )}
                   >
-                    <Glyph size={16} strokeWidth={1.75} />
+                    <Glyph size={16} strokeWidth={1.75} aria-hidden />
                     {meta.label}
                   </button>
                 );
@@ -295,12 +293,8 @@ function ObjectEditorPanel({ objectId }: { objectId: string }) {
             </div>
           </div>
 
-          {/* Content */}
           <div>
-            <label
-              htmlFor={contentId}
-              className="mb-1.5 block text-xs tracking-widest text-muted uppercase"
-            >
+            <label htmlFor={contentId} className={FIELD_LABEL}>
               Content
             </label>
             <Textarea
@@ -314,13 +308,9 @@ function ObjectEditorPanel({ objectId }: { objectId: string }) {
             />
           </div>
 
-          {/* URL (link type) */}
           {object.type === "link" ? (
             <div>
-              <label
-                htmlFor={urlId}
-                className="mb-1.5 block text-xs tracking-widest text-muted uppercase"
-              >
+              <label htmlFor={urlId} className={FIELD_LABEL}>
                 URL
               </label>
               <Input
@@ -342,14 +332,14 @@ function ObjectEditorPanel({ objectId }: { objectId: string }) {
                     href={safeHref}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-2 flex items-center gap-2 rounded-lg border border-border-hair bg-surface-2/60 px-3 py-2 text-xs text-muted transition-colors hover:text-text"
+                    className="mt-2 flex min-h-11 items-center gap-2 rounded-md border border-border-hair bg-surface-2/60 px-3 py-2 text-xs text-muted transition-quiet hover:text-text"
                   >
                     <LinkIcon size={13} strokeWidth={1.75} aria-hidden />
                     <span className="min-w-0 flex-1 truncate">{safeHref}</span>
                     <ExternalLink size={13} strokeWidth={1.75} aria-hidden />
                   </a>
                 ) : (
-                  <p className="mt-2 flex items-center gap-2 rounded-lg border border-danger/40 bg-surface-2/60 px-3 py-2 text-xs text-danger">
+                  <p className="mt-2 flex items-center gap-2 rounded-md border border-danger/40 bg-surface-2/60 px-3 py-2 text-xs text-danger">
                     <ShieldAlert size={13} strokeWidth={1.75} aria-hidden />
                     <span className="min-w-0 flex-1">
                       This address uses a scheme the app won&apos;t open. Use an
@@ -361,13 +351,9 @@ function ObjectEditorPanel({ objectId }: { objectId: string }) {
             </div>
           ) : null}
 
-          {/* File name (file type) */}
           {object.type === "file" ? (
             <div>
-              <label
-                htmlFor={fileNameId}
-                className="mb-1.5 block text-xs tracking-widest text-muted uppercase"
-              >
+              <label htmlFor={fileNameId} className={FIELD_LABEL}>
                 File name
               </label>
               <Input
@@ -380,12 +366,8 @@ function ObjectEditorPanel({ objectId }: { objectId: string }) {
             </div>
           ) : null}
 
-          {/* Tags */}
           <div>
-            <span
-              id={tagsLabelId}
-              className="mb-1.5 block text-xs tracking-widest text-muted uppercase"
-            >
+            <span id={tagsLabelId} className={FIELD_LABEL}>
               Tags
             </span>
             <TagInput
@@ -396,13 +378,9 @@ function ObjectEditorPanel({ objectId }: { objectId: string }) {
             />
           </div>
 
-          {/* Room + pin */}
           <div className="flex items-end gap-3">
-            <div className="flex-1">
-              <label
-                htmlFor={roomId}
-                className="mb-1.5 block text-xs tracking-widest text-muted uppercase"
-              >
+            <div className="min-w-0 flex-1">
+              <label htmlFor={roomId} className={FIELD_LABEL}>
                 Room
               </label>
               <Select
@@ -421,20 +399,20 @@ function ObjectEditorPanel({ objectId }: { objectId: string }) {
               type="button"
               onClick={() => togglePin(object.id)}
               aria-pressed={Boolean(object.pinned)}
-              className={`flex h-10 items-center gap-2 rounded-lg border px-3 text-sm transition-colors ${
+              className={cn(
+                "flex h-11 shrink-0 items-center gap-2 rounded-md border px-3 text-sm transition-quiet",
                 object.pinned
                   ? "border-accent-dim bg-surface-2 text-accent"
-                  : "border-border-hair text-muted hover:border-border-strong hover:text-text"
-              }`}
+                  : "border-border-hair text-muted hover:border-border-strong hover:text-text",
+              )}
             >
-              <Pin size={15} strokeWidth={1.75} />
+              <Pin size={15} strokeWidth={1.75} aria-hidden />
               {object.pinned ? "Pinned" : "Pin"}
             </button>
           </div>
 
-          {/* Relationships */}
           <div className="border-t border-border-hair pt-5">
-            <h3 className="mb-2 font-display text-lg tracking-wide text-text">
+            <h3 className="mb-2 font-display text-base font-semibold text-text">
               Connections
             </h3>
             {objectConnections.length > 0 ? (
@@ -448,7 +426,7 @@ function ObjectEditorPanel({ objectId }: { objectId: string }) {
                   return (
                     <li
                       key={connection.id}
-                      className="flex items-center gap-2 rounded-lg border border-border-hair bg-surface-2/50 px-3 py-2"
+                      className="flex items-center gap-2 rounded-md border border-border-hair bg-surface-2/50 px-3 py-1.5"
                     >
                       <span
                         className="h-2 w-2 shrink-0 rounded-full"
@@ -458,24 +436,23 @@ function ObjectEditorPanel({ objectId }: { objectId: string }) {
                       <button
                         type="button"
                         onClick={() => openObject(other.id)}
-                        className="min-w-0 flex-1 text-left"
+                        className="min-w-0 flex-1 py-1.5 text-left"
                       >
                         <span className="block truncate text-sm text-text hover:text-accent">
                           {other.title}
                         </span>
-                        <span className="block truncate text-[11px] text-muted">
+                        <span className="block truncate text-2xs text-muted">
                           {connection.label ? `${connection.label} · ` : ""}
                           {otherRoom?.name ?? "Unassigned"}
                         </span>
                       </button>
-                      <button
-                        type="button"
+                      <IconButton
+                        label={`Remove connection to ${other.title}`}
+                        className="hover:text-danger"
                         onClick={() => removeConnection(connection.id)}
-                        aria-label={`Remove connection to ${other.title}`}
-                        className="flex h-6 w-6 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface hover:text-danger"
                       >
-                        <X size={14} strokeWidth={1.75} />
-                      </button>
+                        <X size={14} strokeWidth={1.75} aria-hidden />
+                      </IconButton>
                     </li>
                   );
                 })}
@@ -493,18 +470,13 @@ function ObjectEditorPanel({ objectId }: { objectId: string }) {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between gap-3 border-t border-border-hair px-5 py-4">
-          <div className="text-[11px] leading-tight text-muted">
+        <div className="flex items-center justify-between gap-3 border-t border-border-hair px-4 py-3 sm:px-5">
+          <div className="text-2xs leading-tight text-muted">
             <div>Created {new Date(object.createdAt).toLocaleDateString()}</div>
             <div>Updated {new Date(object.updatedAt).toLocaleDateString()}</div>
           </div>
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={() => setConfirmDelete(true)}
-          >
-            <Trash2 size={14} strokeWidth={1.75} />
+          <Button variant="danger" onClick={() => setConfirmDelete(true)}>
+            <Trash2 size={14} strokeWidth={1.75} aria-hidden />
             Delete
           </Button>
         </div>

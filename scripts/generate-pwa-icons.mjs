@@ -18,13 +18,20 @@ import sharp from "sharp";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = join(ROOT, "public");
 
-/** The same doorway glyph as `app/icon.tsx`, on the palace's near-black. */
+/**
+ * The same doorway glyph as `app/icon.tsx`, in an unlit room.
+ *
+ * These two colours are `--palace-base` and `--palace-accent` from the dark
+ * theme, written literally because a PNG cannot resolve a custom property.
+ * When the palette is re-hued, this file and `app/icon.tsx` have to be
+ * re-hued with it and the PNGs regenerated — nothing enforces that.
+ */
 function markSvg(size, { padding }) {
   const glyph = size - padding * 2;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-  <rect width="${size}" height="${size}" fill="#121110"/>
+  <rect width="${size}" height="${size}" fill="#0f0f11"/>
   <g transform="translate(${padding} ${padding}) scale(${glyph / 24})"
-     fill="none" stroke="#c9a227" stroke-width="1.6"
+     fill="none" stroke="#f0b775" stroke-width="1.6"
      stroke-linecap="round" stroke-linejoin="round">
     <path d="M13 4h3a2 2 0 0 1 2 2v14"/>
     <path d="M2 20h3"/>

@@ -1,11 +1,22 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Share2 } from "lucide-react";
 import { usePalaceStore } from "@/lib/store";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
-import { GraphView } from "@/components/graph/GraphView";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { GraphSkeleton } from "@/components/skeletons/RouteSkeletons";
+
+/**
+ * `d3-force` is only ever used by this one view, so it is split out of the
+ * shared chunk and fetched when the graph is actually about to be drawn.
+ * `ssr: false` because the simulation needs layout measurements that do not
+ * exist on the server; the skeleton is the server-rendered stand-in.
+ */
+const GraphView = dynamic(
+  () => import("@/components/graph/GraphView").then((m) => m.GraphView),
+  { ssr: false, loading: () => <GraphSkeleton /> },
+);
 
 export function GraphBody() {
   const hydrated = useHydrated();

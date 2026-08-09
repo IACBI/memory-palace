@@ -1,35 +1,16 @@
-import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
-import { openFirstObject, openFirstRoom, openPalace } from "./helpers";
+import { expect, test } from "@playwright/test";
+import {
+  openFirstObject,
+  openFirstRoom,
+  openPalace,
+  ROUTES,
+  scan,
+} from "./helpers";
 
 /**
  * Automated checks catch roughly a third of accessibility defects, so these
  * scans sit alongside the keyboard journeys below rather than replacing them.
  */
-async function scan(page: Page) {
-  // Entrance animations fade opacity in from 0. Scanning mid-flight reports
-  // every element as a contrast failure against its half-composited colour,
-  // which says nothing about the interface at rest.
-  // Skeleton shimmers loop forever, so only finite animations are waited on.
-  await page.waitForFunction(() =>
-    document.getAnimations().every((animation) => {
-      const iterations = animation.effect?.getComputedTiming().iterations ?? 1;
-      return iterations === Infinity || animation.playState !== "running";
-    }),
-  );
-  return new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-    .analyze();
-}
-
-const ROUTES = [
-  ["dashboard", "./"],
-  ["palace", "./palace/"],
-  ["library", "./library/"],
-  ["graph", "./graph/"],
-  ["settings", "./settings/"],
-] as const;
-
 for (const [name, path] of ROUTES) {
   test(`${name} has no axe violations`, async ({ page }) => {
     await openPalace(page, path);

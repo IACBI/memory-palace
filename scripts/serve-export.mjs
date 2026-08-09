@@ -16,7 +16,19 @@ const ROOT = new URL("../out/", import.meta.url).pathname.replace(
   "$1",
 );
 const BASE_PATH = "/memory-palace";
-const PORT = Number(process.env.PORT ?? 4173);
+
+/**
+ * `--port N` wins over `PORT`, which wins over the default.
+ *
+ * The flag exists so `playwright.config.ts` can move this server off 4173 the
+ * same way it moves `next start` off 3000, in one consistent spelling.
+ */
+const portFlag = process.argv.indexOf("--port");
+const PORT = Number(
+  (portFlag !== -1 ? process.argv[portFlag + 1] : undefined) ??
+    process.env.PORT ??
+    4173,
+);
 
 const MIME = {
   ".html": "text/html; charset=utf-8",

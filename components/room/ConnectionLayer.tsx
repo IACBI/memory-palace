@@ -122,7 +122,7 @@ export const ConnectionLayer = memo(function ConnectionLayer({
                 y={mid.y}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                className="fill-muted text-[11px]"
+                className="fill-muted text-2xs"
                 style={{
                   paintOrder: "stroke",
                   stroke: "var(--palace-base)",

@@ -87,7 +87,7 @@ export function PalaceBody() {
   return (
     <>
       {rooms.length === 0 ? (
-        <div className="mt-16">
+        <div className="mt-12 sm:mt-16">
           <EmptyState
             icon={Castle}
             title="An empty floor plan"
@@ -100,9 +100,12 @@ export function PalaceBody() {
           />
         </div>
       ) : (
+        // The plan keeps its aspect ratio and scrolls sideways below its
+        // minimum width; squeezing a 12-column floor plan onto a phone makes
+        // every chamber unreadable instead.
         <div className="mt-8 overflow-x-auto">
           <div
-            className="palace-floor relative mx-auto grid aspect-[3/2] w-full min-w-[680px] gap-2 rounded-2xl border border-border-hair p-3"
+            className="palace-floor relative mx-auto grid aspect-[3/2] w-full min-w-[680px] gap-2 rounded-xl border border-border-hair p-3"
             style={{
               gridTemplateColumns: `repeat(${GRID_COLS}, minmax(0, 1fr))`,
               gridTemplateRows: `repeat(${GRID_ROWS}, minmax(0, 1fr))`,

@@ -5,6 +5,8 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useFocusTrap } from "@/lib/hooks/use-focus-trap";
 import { useDismissable } from "@/lib/hooks/use-dismissable";
+import { cn } from "@/lib/cn";
+import { IconButton } from "./IconButton";
 
 export function Dialog({
   open,
@@ -32,9 +34,11 @@ export function Dialog({
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    // Ends flush with the bottom on a phone and centres from `sm` up: a
+    // centred dialog on a short viewport puts its actions under the keyboard.
+    <div className="fixed inset-0 z-[var(--z-overlay)] flex items-end justify-center p-0 sm:items-center sm:p-4">
       <div
-        className="motion-fade-in absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="motion-fade-in absolute inset-0 bg-black/70 backdrop-blur-[3px]"
         onClick={onClose}
         aria-hidden
       />
@@ -44,36 +48,38 @@ export function Dialog({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descId : undefined}
-        className={`motion-dialog-in relative z-10 w-full rounded-2xl border border-border-strong bg-surface p-6 shadow-[0_24px_80px_-12px_rgba(0,0,0,0.7)] ${
-          size === "lg" ? "max-w-2xl" : "max-w-md"
-        }`}
+        className={cn(
+          "motion-dialog-in relative z-[var(--z-raised)] max-h-[92vh] w-full overflow-y-auto rounded-t-xl border border-border-strong bg-surface p-5 shadow-overlay sm:rounded-xl sm:p-7",
+          size === "lg" ? "sm:max-w-2xl" : "sm:max-w-md",
+        )}
       >
-        <button
-          type="button"
+        <IconButton
+          label="Close dialog"
           onClick={onClose}
-          aria-label="Close dialog"
-          className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-2 hover:text-text"
+          className="absolute top-3 right-3"
         >
-          <X size={16} strokeWidth={1.75} />
-        </button>
+          <X size={16} strokeWidth={1.75} aria-hidden />
+        </IconButton>
         <h2
           id={titleId}
-          className="font-display text-2xl tracking-wide text-text"
+          className="pr-10 font-display text-xl font-semibold tracking-tight text-text"
         >
           {title}
         </h2>
         {description ? (
-          <p id={descId} className="mt-1 text-sm text-muted">
+          <p id={descId} className="mt-1.5 text-sm text-pretty text-muted">
             {description}
           </p>
         ) : null}
-        {/* Reference-sized dialogs can outgrow a short viewport; the body
-            scrolls so the title and close button stay put.
-            A scrollable region whose content is all static text has no way in
-            from the keyboard, so it becomes a tab stop of its own — otherwise
-            anything below the fold is mouse-only. */}
+        {/* Reference-sized dialogs can outgrow a short viewport. A scrollable
+            region whose content is all static text has no way in from the
+            keyboard, so it becomes a tab stop of its own — otherwise anything
+            below the fold is mouse-only. */}
         <div
-          className={`mt-5 ${size === "lg" ? "max-h-[65vh] overflow-y-auto pr-1" : ""}`}
+          className={cn(
+            "mt-5",
+            size === "lg" && "max-h-[60vh] overflow-y-auto pr-1",
+          )}
           {...(size === "lg"
             ? { tabIndex: 0, role: "group", "aria-labelledby": titleId }
             : {})}
@@ -81,7 +87,9 @@ export function Dialog({
           {children}
         </div>
         {footer ? (
-          <div className="mt-6 flex justify-end gap-3">{footer}</div>
+          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+            {footer}
+          </div>
         ) : null}
       </div>
     </div>,

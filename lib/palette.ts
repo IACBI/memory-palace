@@ -61,3 +61,21 @@ export function paletteTint(
 ): string {
   return `color-mix(in srgb, ${paletteColor(key)} ${TINT_ALPHA[tint]}, transparent)`;
 }
+
+/**
+ * The three custom properties the `.threshold` utility reads, tinted for one
+ * room.
+ *
+ * Kept here rather than spelled out at each call site so the signature element
+ * of the interface has exactly one definition, and so no component is tempted
+ * to build one of these values by concatenation — see {@link paletteColor}.
+ */
+export function thresholdVars(
+  key: PaletteKey | null | undefined,
+): Record<string, string> {
+  return {
+    "--threshold-light": paletteTint(key, "veil"),
+    "--threshold-edge": paletteTint(key, "edge"),
+    "--threshold-edge-lit": paletteColor(key),
+  };
+}

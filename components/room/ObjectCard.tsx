@@ -6,6 +6,7 @@ import type { KnowledgeObject, PaletteKey } from "@/lib/types";
 import { OBJECT_TYPE_META } from "@/lib/object-meta";
 import { paletteColor, paletteTint } from "@/lib/palette";
 import { usePalaceStore } from "@/lib/store";
+import { cn } from "@/lib/cn";
 
 const DRAG_THRESHOLD = 4; // px before a press becomes a drag
 const CARD_WIDTH = 180;
@@ -187,17 +188,14 @@ export function ObjectCard({
         else if (linking) onCancelLink();
         else onOpen(object.id);
       }}
-      className={`group absolute touch-none rounded-xl border bg-surface p-3 transition-shadow duration-150 select-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
+      className={cn(
+        "group absolute touch-none rounded-lg border bg-surface p-3 transition-shadow duration-150 select-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2",
         dragging
-          ? "z-20 cursor-grabbing shadow-[0_18px_50px_-12px_rgba(0,0,0,0.75)]"
-          : "z-10 cursor-grab shadow-[0_2px_16px_-8px_rgba(0,0,0,0.6)] hover:shadow-[0_8px_36px_-12px_var(--glow)]"
-      } ${
-        isLinkSource
-          ? "ring-2 ring-accent"
-          : linking
-            ? "cursor-crosshair ring-1 ring-accent-dim"
-            : ""
-      }`}
+          ? "z-[var(--z-sticky)] cursor-grabbing shadow-overlay"
+          : "z-[var(--z-raised)] cursor-grab shadow-raise hover:shadow-[0_8px_36px_-12px_var(--glow)]",
+        isLinkSource && "ring-2 ring-accent",
+        linking && !isLinkSource && "cursor-crosshair ring-1 ring-accent-dim",
+      )}
       style={
         {
           left: `${pos.x}%`,
@@ -221,6 +219,9 @@ export function ObjectCard({
         cannot tell which is which. Keyboard users reach the same behaviour
         through the L key, which the canvas instructions describe, so this
         stays hidden from the accessibility tree and handles pointers only.
+
+        It is permanently visible on a touch screen: `group-hover` never fires
+        there, which left drawing a link mouse-only.
       */}
       <span
         aria-hidden
@@ -230,7 +231,7 @@ export function ObjectCard({
           e.preventDefault();
           onStartLink(object.id, { x: e.clientX, y: e.clientY });
         }}
-        className="absolute top-1/2 -right-2.5 z-30 flex h-5 w-5 -translate-y-1/2 cursor-crosshair items-center justify-center rounded-full border border-border-strong bg-surface opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+        className="absolute top-1/2 -right-3 z-[var(--z-drawer)] flex h-6 w-6 -translate-y-1/2 cursor-crosshair items-center justify-center rounded-full border border-border-strong bg-surface transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 md:opacity-0"
       >
         <span
           className="h-1.5 w-1.5 rounded-full"
@@ -240,22 +241,29 @@ export function ObjectCard({
 
       <div className="flex items-center justify-between gap-2">
         <span
-          className="flex h-6 w-6 items-center justify-center rounded-md"
+          className="flex h-6 w-6 items-center justify-center rounded-sm"
           style={{
             backgroundColor: paletteTint(palette, "chip"),
             color: accent,
           }}
         >
-          <Glyph size={13} strokeWidth={1.75} />
+          <Glyph size={13} strokeWidth={1.75} aria-hidden />
         </span>
         <div className="flex items-center gap-1 text-muted">
-          {object.url ? <ExternalLink size={12} strokeWidth={1.75} /> : null}
+          {object.url ? (
+            <ExternalLink size={12} strokeWidth={1.75} aria-hidden />
+          ) : null}
           {object.pinned ? (
-            <Pin size={12} strokeWidth={1.75} className="text-accent" />
+            <Pin
+              size={12}
+              strokeWidth={1.75}
+              className="text-accent"
+              aria-hidden
+            />
           ) : null}
         </div>
       </div>
-      <h4 className="mt-2 line-clamp-2 font-display text-sm leading-tight text-text">
+      <h4 className="mt-2 line-clamp-2 font-display text-sm leading-tight font-medium text-text">
         {object.title}
       </h4>
       {(visibleTags.length > 0 || overflow > 0) && (
@@ -263,13 +271,13 @@ export function ObjectCard({
           {visibleTags.map((tag) => (
             <span
               key={tag}
-              className="rounded-full border border-border-hair bg-surface-2 px-1.5 py-0.5 text-[11px] text-muted"
+              className="rounded-full border border-border-hair bg-surface-2 px-1.5 py-0.5 text-2xs text-muted"
             >
               {tag}
             </span>
           ))}
           {overflow > 0 ? (
-            <span className="text-[11px] text-muted">+{overflow}</span>
+            <span className="text-2xs text-muted">+{overflow}</span>
           ) : null}
         </div>
       )}

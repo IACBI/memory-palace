@@ -16,10 +16,14 @@ export const metadata: Metadata = {
 
 export default function DashboardPage() {
   return (
-    <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8">
-      <header className="border-b border-border-hair pb-6">
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-8 sm:py-14">
+      <header>
         <Greeting />
         <DashboardStats />
+        <div
+          className="mt-6 h-px bg-gradient-to-r from-border-strong via-border-hair to-transparent sm:mt-8"
+          aria-hidden
+        />
       </header>
       <DashboardBody />
     </div>

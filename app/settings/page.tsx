@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function SettingsPage() {
   return (
-    <div className="mx-auto max-w-3xl px-5 py-10 sm:px-8">
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-8 sm:py-10">
       <PageHeader
         title="Settings"
         subtitle="Preferences, your palace data, and a few things worth knowing."
