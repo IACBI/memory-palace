@@ -386,15 +386,21 @@ export function GraphView({
     (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
   };
   const onBgPointerMove = (e: React.PointerEvent) => {
-    if (!roamRef.current) return;
+    // Read the roam out of the ref *here* rather than inside the updater. The
+    // guard above runs now, but the updater runs later, during render — and
+    // `onBgPointerUp` clears the ref in between often enough that panning to
+    // the very edge of the canvas threw `null.ox` and dropped the whole graph
+    // into the error boundary.
+    const roam = roamRef.current;
+    if (!roam) return;
     const svg = svgRef.current;
     const scale = svg
       ? viewRef.current.w / svg.getBoundingClientRect().width
       : 1;
     setTransform((t) => ({
       ...t,
-      x: roamRef.current!.ox + (e.clientX - roamRef.current!.startX) * scale,
-      y: roamRef.current!.oy + (e.clientY - roamRef.current!.startY) * scale,
+      x: roam.ox + (e.clientX - roam.startX) * scale,
+      y: roam.oy + (e.clientY - roam.startY) * scale,
     }));
   };
   const onBgPointerUp = () => {
