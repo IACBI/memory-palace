@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  useDeferredValue,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useRoomMap } from "@/lib/hooks/use-room-map";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
@@ -78,6 +85,16 @@ type CommandItem = { key: string; group: string } & (
 );
 
 /**
+ * How many object hits the list will draw.
+ *
+ * A one-letter query matches most of a palace, and the palette used to turn
+ * every one of those into a button — thousands of DOM nodes built inside a
+ * keystroke. Nobody arrows to the four hundredth result; they type another
+ * letter. The rest are counted, not rendered.
+ */
+const MAX_OBJECT_RESULTS = 50;
+
+/**
  * The palette body.
  *
  * Mounted only while open — by `components/shell/Overlays.tsx`, which owns the
@@ -95,6 +112,16 @@ export function CommandPalette() {
   const router = useRouter();
 
   const [query, setQuery] = useState("");
+  /**
+   * The query the *results* are built from.
+   *
+   * The input stays on `query`, so the caret never waits for a search. React
+   * re-renders the list from `deferredQuery` at low priority and abandons that
+   * render as soon as the next keystroke arrives, which is what a debounce
+   * approximates with a timer and always gets wrong at one end or the other.
+   */
+  const deferredQuery = useDeferredValue(query);
+  const stale = deferredQuery !== query;
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -123,8 +150,8 @@ export function CommandPalette() {
   };
 
   const results = useMemo(
-    () => searchPalace(query, rooms, objects),
-    [query, rooms, objects],
+    () => searchPalace(deferredQuery, rooms, objects),
+    [deferredQuery, rooms, objects],
   );
 
   const recentObjects = useMemo(
@@ -145,7 +172,7 @@ export function CommandPalette() {
    * actually live.
    */
   const items = useMemo<CommandItem[]>(() => {
-    const q = query.trim().toLowerCase();
+    const q = deferredQuery.trim().toLowerCase();
     const list: CommandItem[] = [];
 
     const objectItem = (
@@ -173,7 +200,7 @@ export function CommandPalette() {
           matches: hit.matches,
         });
       }
-      for (const hit of results.objects) {
+      for (const hit of results.objects.slice(0, MAX_OBJECT_RESULTS)) {
         list.push(objectItem("Objects", hit.object, hit.roomName, hit.matches));
       }
 
@@ -185,7 +212,7 @@ export function CommandPalette() {
           kind: "create",
           key: "create-object",
           group: "Create",
-          title: query.trim(),
+          title: deferredQuery.trim(),
           room: target,
         });
       }
@@ -215,7 +242,7 @@ export function CommandPalette() {
     }
 
     return list;
-  }, [query, results, recentObjects, roomById, rooms]);
+  }, [deferredQuery, results, recentObjects, roomById, rooms]);
 
   /** Performs an item. The only place the router and the store are touched. */
   const runItem = (item: CommandItem) => {
@@ -344,22 +371,30 @@ export function CommandPalette() {
     el?.scrollIntoView({ block: "nearest" });
   }, [clampedActive]);
 
-  // Group items for rendering while preserving flat indices.
-  let runningIndex = -1;
-  const groups: Array<{
-    name: string;
-    entries: Array<{ item: CommandItem; index: number }>;
-  }> = [];
-  for (const item of items) {
-    runningIndex += 1;
-    const idx = runningIndex;
-    const last = groups[groups.length - 1];
-    if (last && last.name === item.group) {
-      last.entries.push({ item, index: idx });
-    } else {
-      groups.push({ name: item.group, entries: [{ item, index: idx }] });
-    }
-  }
+  // Group items for rendering while preserving flat indices. Memoised because
+  // this component re-renders on every pointer move across the list, and the
+  // grouping does not change when the highlighted row does.
+  const groups = useMemo(() => {
+    const built: Array<{
+      name: string;
+      entries: Array<{ item: CommandItem; index: number }>;
+    }> = [];
+    items.forEach((item, index) => {
+      const last = built[built.length - 1];
+      if (last && last.name === item.group) {
+        last.entries.push({ item, index });
+      } else {
+        built.push({ name: item.group, entries: [{ item, index }] });
+      }
+    });
+    return built;
+  }, [items]);
+
+  // Counted, not drawn — see `MAX_OBJECT_RESULTS`.
+  const hiddenObjects = Math.max(
+    0,
+    results.objects.length - MAX_OBJECT_RESULTS,
+  );
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
@@ -434,11 +469,17 @@ export function CommandPalette() {
           id={listId}
           role="listbox"
           aria-label="Results"
-          className="min-h-0 flex-1 overflow-y-auto py-2"
+          aria-busy={stale}
+          className={cn(
+            "min-h-0 flex-1 overflow-y-auto py-2 transition-quiet",
+            // The results are a keystroke behind while React catches up. Say so
+            // quietly rather than blanking the list, which would flash.
+            stale && "opacity-60",
+          )}
         >
           {items.length === 0 ? (
             <p className="px-4 py-8 text-center text-sm text-muted">
-              No matches for “{query}”.
+              No matches for “{deferredQuery}”.
             </p>
           ) : (
             groups.map((group) => (
@@ -490,12 +531,20 @@ export function CommandPalette() {
               </div>
             ))
           )}
+
+          {hiddenObjects > 0 ? (
+            <p className="px-4 py-2 text-2xs text-muted">
+              …and {hiddenObjects} more. Keep typing to narrow it down.
+            </p>
+          ) : null}
         </div>
 
-        {/* Announces the result count without moving focus. */}
+        {/* Announces what is actually on screen, not what matched. */}
         <span aria-live="polite" className="sr-only">
-          {query
-            ? `${items.length} ${items.length === 1 ? "result" : "results"}`
+          {deferredQuery
+            ? `${items.length} ${items.length === 1 ? "result" : "results"}${
+                hiddenObjects > 0 ? `, ${hiddenObjects} more not shown` : ""
+              }`
             : ""}
         </span>
       </div>

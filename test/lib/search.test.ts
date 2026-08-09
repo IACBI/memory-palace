@@ -235,3 +235,47 @@ describe("match ranges", () => {
     expect(object.title.slice(start, end)).toBe("FERMENTATION");
   });
 });
+
+describe("the folded-text cache", () => {
+  /**
+   * Fields are lowercased once per record and kept, keyed by identity. That is
+   * only sound because the store replaces a record on every edit — so these
+   * pin the assumption rather than the optimisation.
+   */
+  it("does not serve a stale result for an edited record", () => {
+    const before = makeObject({ title: "Fermentation log", tags: [] });
+    expect(searchPalace("kimchi", [], [before]).objects).toHaveLength(0);
+
+    const after = { ...before, title: "Kimchi log" };
+    expect(searchPalace("kimchi", [], [after]).objects).toHaveLength(1);
+    // The original object is untouched and still does not match.
+    expect(searchPalace("kimchi", [], [before]).objects).toHaveLength(0);
+  });
+
+  it("keeps records apart rather than folding one over another", () => {
+    const study = makeRoom({ name: "The Study", description: "quiet" });
+    const lab = makeRoom({ name: "The Laboratory", description: "loud" });
+
+    expect(
+      searchPalace("quiet", [study, lab], []).rooms.map((r) => r.room.id),
+    ).toEqual([study.id]);
+    expect(
+      searchPalace("loud", [study, lab], []).rooms.map((r) => r.room.id),
+    ).toEqual([lab.id]);
+  });
+
+  it("searches every field of a record it has already folded", () => {
+    const object = makeObject({
+      title: "Notes",
+      content: "Sourdough starter",
+      tags: ["Baking"],
+      url: "https://example.com/Levain",
+    });
+
+    // Fold it once on the title, then reach for each cached field in turn.
+    expect(searchPalace("notes", [], [object]).objects).toHaveLength(1);
+    for (const query of ["sourdough", "baking", "levain"]) {
+      expect(searchPalace(query, [], [object]).objects).toHaveLength(1);
+    }
+  });
+});

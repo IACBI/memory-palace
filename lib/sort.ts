@@ -21,6 +21,22 @@ interface Pinnable {
 }
 
 /**
+ * Parsed timestamps, kept between calls.
+ *
+ * A comparator runs O(n log n) times, twice per comparison, over a set of at
+ * most n distinct strings — so parsing inside it did the same few thousand ISO
+ * parses over and over. That is most of the cost of typing in the library's
+ * search box, which re-sorts the whole list on every keystroke.
+ *
+ * Cleared wholesale rather than evicted: entries are only ever added for
+ * timestamps that exist in the palace, so the map settles at that size, and the
+ * bound is there for the pathological case of an import loop rather than for
+ * normal use.
+ */
+const parsed = new Map<string, number>();
+const PARSE_CACHE_MAX = 4096;
+
+/**
  * Milliseconds for an ISO timestamp, or `0` if it cannot be parsed.
  *
  * Imported data can carry a malformed date. `NaN` poisons a comparator — the
@@ -28,8 +44,14 @@ interface Pinnable {
  * becomes implementation-defined for the whole list, not just that row.
  */
 function time(value: string): number {
-  const parsed = new Date(value).getTime();
-  return Number.isNaN(parsed) ? 0 : parsed;
+  const cached = parsed.get(value);
+  if (cached !== undefined) return cached;
+
+  const ms = Date.parse(value);
+  const safe = Number.isNaN(ms) ? 0 : ms;
+  if (parsed.size >= PARSE_CACHE_MAX) parsed.clear();
+  parsed.set(value, safe);
+  return safe;
 }
 
 /** Most recently edited first. */

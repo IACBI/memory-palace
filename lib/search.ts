@@ -130,21 +130,72 @@ function isSubsequence(text: string, token: string): boolean {
   return true;
 }
 
+/**
+ * One record's searchable text, lowercased.
+ *
+ * Every field is folded once and kept, rather than folded inside the scoring
+ * loop. The old shape lowercased the *entire note body* once per query token
+ * per object — so a two-word search over a full palace allocated a fresh
+ * lowercase copy of every note twice, on every keystroke, and the cost grew
+ * with how much the reader had written rather than with how many notes they
+ * had.
+ */
+interface Lowered {
+  title: string;
+  tags: readonly string[];
+  content: string;
+  meta: readonly string[];
+}
+
+const NO_STRINGS: readonly string[] = [];
+
+/**
+ * Folded records, keyed by identity.
+ *
+ * Safe without invalidation because the store never mutates a record in place:
+ * every edit replaces the object, so a changed record is a different key and
+ * the old entry is collected with it.
+ */
+const foldedCache = new WeakMap<Room | KnowledgeObject, Lowered>();
+
+function fold(record: Room | KnowledgeObject, build: () => Lowered): Lowered {
+  const cached = foldedCache.get(record);
+  if (cached) return cached;
+  const folded = build();
+  foldedCache.set(record, folded);
+  return folded;
+}
+
+function foldRoom(room: Room): Lowered {
+  return fold(room, () => ({
+    title: room.name.toLowerCase(),
+    tags: NO_STRINGS,
+    content: room.description ? room.description.toLowerCase() : "",
+    meta: NO_STRINGS,
+  }));
+}
+
+function foldObject(object: KnowledgeObject): Lowered {
+  return fold(object, () => ({
+    title: object.title.toLowerCase(),
+    tags: object.tags.map((tag) => tag.toLowerCase()),
+    content: object.content ? object.content.toLowerCase() : "",
+    meta: [object.url, object.fileName]
+      .filter((value): value is string => Boolean(value))
+      .map((value) => value.toLowerCase()),
+  }));
+}
+
 /** Best score for one token against one record, and where it hit the title. */
 interface TokenHit {
   score: number;
   titleRanges: MatchRange[];
 }
 
-function scoreTokenAgainst(
-  token: string,
-  title: string,
-  extras: {
-    tags?: readonly string[];
-    content?: string;
-    meta?: readonly (string | undefined)[];
-  },
-): TokenHit {
+const NO_HIT: TokenHit = { score: 0, titleRanges: [] };
+
+function scoreTokenAgainst(token: string, record: Lowered): TokenHit {
+  const { title } = record;
   let score = 0;
 
   if (title === token) score += TOKEN_SCORE.titleExact;
@@ -153,27 +204,23 @@ function scoreTokenAgainst(
     score += TOKEN_SCORE.titleWordPrefix;
   else if (title.includes(token)) score += TOKEN_SCORE.titleSubstring;
 
-  for (const tag of extras.tags ?? []) {
-    const lower = tag.toLowerCase();
-    if (lower === token) score += TOKEN_SCORE.tagExact;
-    else if (lower.includes(token)) score += TOKEN_SCORE.tagSubstring;
+  for (const tag of record.tags) {
+    if (tag === token) score += TOKEN_SCORE.tagExact;
+    else if (tag.includes(token)) score += TOKEN_SCORE.tagSubstring;
   }
 
-  if (extras.content && extras.content.toLowerCase().includes(token)) {
-    score += TOKEN_SCORE.content;
+  if (record.content.includes(token)) score += TOKEN_SCORE.content;
+
+  for (const value of record.meta) {
+    if (value.includes(token)) score += TOKEN_SCORE.meta;
   }
 
-  for (const value of extras.meta ?? []) {
-    if (value && value.toLowerCase().includes(token)) score += TOKEN_SCORE.meta;
-  }
-
-  // Only reached when the token appears nowhere verbatim.
-  if (
-    score === 0 &&
-    token.length >= MIN_FUZZY_LENGTH &&
-    isSubsequence(title, token)
-  ) {
-    return { score: TOKEN_SCORE.subsequence, titleRanges: [] };
+  if (score === 0) {
+    // Only reached when the token appears nowhere verbatim, so the title
+    // ranges below would be empty anyway — don't go looking for them.
+    return token.length >= MIN_FUZZY_LENGTH && isSubsequence(title, token)
+      ? { score: TOKEN_SCORE.subsequence, titleRanges: [] }
+      : NO_HIT;
   }
 
   return { score, titleRanges: occurrences(title, token) };
@@ -188,14 +235,14 @@ function scoreTokenAgainst(
 function scoreRecord(
   tokens: string[],
   phrase: string,
-  title: string,
-  extras: Parameters<typeof scoreTokenAgainst>[2],
+  record: Lowered,
 ): TokenHit | null {
+  const { title } = record;
   let total = 0;
   const ranges: MatchRange[] = [];
 
   for (const token of tokens) {
-    const hit = scoreTokenAgainst(token, title, extras);
+    const hit = scoreTokenAgainst(token, record);
     if (hit.score === 0) return null;
     total += hit.score;
     ranges.push(...hit.titleRanges);
@@ -231,9 +278,7 @@ export function searchPalace(
 
   const roomResults: RoomSearchResult[] = [];
   for (const room of rooms) {
-    const hit = scoreRecord(tokens, phrase, room.name.toLowerCase(), {
-      content: room.description,
-    });
+    const hit = scoreRecord(tokens, phrase, foldRoom(room));
     if (!hit) continue;
     roomResults.push({
       kind: "room",
@@ -246,11 +291,7 @@ export function searchPalace(
 
   const objectResults: ObjectSearchResult[] = [];
   for (const object of objects) {
-    const hit = scoreRecord(tokens, phrase, object.title.toLowerCase(), {
-      tags: object.tags,
-      content: object.content,
-      meta: [object.url, object.fileName],
-    });
+    const hit = scoreRecord(tokens, phrase, foldObject(object));
     if (!hit) continue;
     objectResults.push({
       kind: "object",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { useRoomMap } from "@/lib/hooks/use-room-map";
 import { Search, LayoutGrid, Rows3, Pin, X } from "lucide-react";
 import { usePalaceStore } from "@/lib/store";
@@ -49,6 +49,13 @@ export function LibraryBody() {
   const openObject = usePalaceStore((s) => s.openObject);
 
   const [query, setQuery] = useState("");
+  /**
+   * The query the list is built from. The input stays on `query` so typing is
+   * never held up by a re-sort of the whole library; React renders the results
+   * behind it at low priority and drops that work when the next key lands.
+   */
+  const deferredQuery = useDeferredValue(query);
+  const stale = deferredQuery !== query;
   const [roomFilter, setRoomFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState<"all" | ObjectType>("all");
   const [tagFilter, setTagFilter] = useState("all");
@@ -72,14 +79,14 @@ export function LibraryBody() {
    * mark the matched words in each title.
    */
   const matchesById = useMemo(() => {
-    if (!query.trim()) return null;
+    if (!deferredQuery.trim()) return null;
     return new Map(
-      searchPalace(query, rooms, objects).objects.map((r) => [
+      searchPalace(deferredQuery, rooms, objects).objects.map((r) => [
         r.object.id,
         r.matches,
       ]),
     );
-  }, [query, rooms, objects]);
+  }, [deferredQuery, rooms, objects]);
 
   const filtered = useMemo(() => {
     let list = objects;
@@ -256,112 +263,64 @@ export function LibraryBody() {
         </div>
       </div>
 
-      {filtered.length === 0 ? (
-        <div className="mt-8">
-          <EmptyState
-            icon={Search}
-            title="Nothing matches"
-            hint="Try a different search or clear your filters."
-          />
-        </div>
-      ) : layout === "list" ? (
-        <div className="mt-4 overflow-hidden rounded-lg border border-border-hair">
-          {visible.map((object) => {
-            const room = roomById.get(object.roomId);
-            const color = paletteColor(room?.palette);
-            return (
-              <button
-                key={object.id}
-                type="button"
-                onClick={() => openObject(object.id)}
-                className="flex min-h-14 w-full items-center gap-3 border-b border-border-hair bg-surface px-4 py-3 text-left transition-quiet last:border-0 hover:bg-surface-2"
-              >
-                <ObjectGlyph
-                  type={object.type}
-                  palette={room?.palette}
-                  size="md"
-                />
-                <span className="flex min-w-0 flex-1 items-center gap-2">
-                  <span className="truncate text-sm text-text">
-                    <Highlight
-                      text={object.title}
-                      ranges={matchesById?.get(object.id) ?? []}
-                    />
-                  </span>
-                  {object.pinned ? (
-                    <Pin
-                      size={12}
-                      strokeWidth={1.75}
-                      className="shrink-0 text-accent"
-                      aria-hidden
-                    />
-                  ) : null}
-                </span>
-                <span className="hidden max-w-[30%] shrink-0 items-center gap-1.5 sm:flex">
-                  {object.tags.slice(0, 3).map((tag) => (
-                    <span
-                      key={tag}
-                      className="truncate rounded-full border border-border-hair bg-surface-2 px-2 py-0.5 text-2xs text-muted"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </span>
-                <span className="hidden w-30 shrink-0 items-center gap-1.5 text-xs text-muted md:flex">
-                  <span
-                    className="h-2 w-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: color }}
-                    aria-hidden
-                  />
-                  <span className="truncate">{room?.name ?? "—"}</span>
-                </span>
-                <time className="tabular w-16 shrink-0 text-xs text-muted">
-                  {relativeTime(object.updatedAt)}
-                </time>
-              </button>
-            );
-          })}
-          {hasMore ? <ListSentinel onVisible={sentinelRef} /> : null}
-        </div>
-      ) : (
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {visible.map((object) => {
-            const room = roomById.get(object.roomId);
-            const color = paletteColor(room?.palette);
-            return (
-              <button
-                key={object.id}
-                type="button"
-                onClick={() => openObject(object.id)}
-                className="flex flex-col rounded-lg border border-border-hair bg-surface p-4 text-left transition-quiet hover:border-border-strong hover:bg-surface-2 hover:shadow-raise"
-                style={{ boxShadow: `inset 3px 0 0 0 ${color}` }}
-              >
-                <div className="flex items-center justify-between">
+      {/* Results run a keystroke behind the box while React catches up. Fade
+          them rather than blanking them, so the page never flashes empty. */}
+      <div
+        aria-busy={stale}
+        className={cn("transition-quiet", stale && "opacity-60")}
+      >
+        {filtered.length === 0 ? (
+          <div className="mt-8">
+            <EmptyState
+              icon={Search}
+              title="Nothing matches"
+              hint="Try a different search or clear your filters."
+            />
+          </div>
+        ) : layout === "list" ? (
+          <div className="mt-4 overflow-hidden rounded-lg border border-border-hair">
+            {visible.map((object) => {
+              const room = roomById.get(object.roomId);
+              const color = paletteColor(room?.palette);
+              return (
+                <button
+                  key={object.id}
+                  type="button"
+                  onClick={() => openObject(object.id)}
+                  className="flex min-h-14 w-full items-center gap-3 border-b border-border-hair bg-surface px-4 py-3 text-left transition-quiet last:border-0 hover:bg-surface-2"
+                >
                   <ObjectGlyph
                     type={object.type}
                     palette={room?.palette}
                     size="md"
                   />
-                  {object.pinned ? (
-                    <Pin
-                      size={13}
-                      strokeWidth={1.75}
-                      className="text-accent"
-                      aria-hidden
-                    />
-                  ) : null}
-                </div>
-                <h3 className="mt-2.5 line-clamp-2 font-display text-base leading-tight font-semibold tracking-tight text-text">
-                  <Highlight
-                    text={object.title}
-                    ranges={matchesById?.get(object.id) ?? []}
-                  />
-                </h3>
-                <p className="mt-1 line-clamp-2 text-xs text-muted">
-                  {object.content}
-                </p>
-                <div className="mt-3 flex items-center justify-between gap-2 text-2xs text-muted">
-                  <span className="inline-flex min-w-0 items-center gap-1.5">
+                  <span className="flex min-w-0 flex-1 items-center gap-2">
+                    <span className="truncate text-sm text-text">
+                      <Highlight
+                        text={object.title}
+                        ranges={matchesById?.get(object.id) ?? []}
+                      />
+                    </span>
+                    {object.pinned ? (
+                      <Pin
+                        size={12}
+                        strokeWidth={1.75}
+                        className="shrink-0 text-accent"
+                        aria-hidden
+                      />
+                    ) : null}
+                  </span>
+                  <span className="hidden max-w-[30%] shrink-0 items-center gap-1.5 sm:flex">
+                    {object.tags.slice(0, 3).map((tag) => (
+                      <span
+                        key={tag}
+                        className="truncate rounded-full border border-border-hair bg-surface-2 px-2 py-0.5 text-2xs text-muted"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </span>
+                  <span className="hidden w-30 shrink-0 items-center gap-1.5 text-xs text-muted md:flex">
                     <span
                       className="h-2 w-2 shrink-0 rounded-full"
                       style={{ backgroundColor: color }}
@@ -369,16 +328,71 @@ export function LibraryBody() {
                     />
                     <span className="truncate">{room?.name ?? "—"}</span>
                   </span>
-                  <time className="tabular shrink-0">
+                  <time className="tabular w-16 shrink-0 text-xs text-muted">
                     {relativeTime(object.updatedAt)}
                   </time>
-                </div>
-              </button>
-            );
-          })}
-          {hasMore ? <ListSentinel onVisible={sentinelRef} /> : null}
-        </div>
-      )}
+                </button>
+              );
+            })}
+            {hasMore ? <ListSentinel onVisible={sentinelRef} /> : null}
+          </div>
+        ) : (
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {visible.map((object) => {
+              const room = roomById.get(object.roomId);
+              const color = paletteColor(room?.palette);
+              return (
+                <button
+                  key={object.id}
+                  type="button"
+                  onClick={() => openObject(object.id)}
+                  className="flex flex-col rounded-lg border border-border-hair bg-surface p-4 text-left transition-quiet hover:border-border-strong hover:bg-surface-2 hover:shadow-raise"
+                  style={{ boxShadow: `inset 3px 0 0 0 ${color}` }}
+                >
+                  <div className="flex items-center justify-between">
+                    <ObjectGlyph
+                      type={object.type}
+                      palette={room?.palette}
+                      size="md"
+                    />
+                    {object.pinned ? (
+                      <Pin
+                        size={13}
+                        strokeWidth={1.75}
+                        className="text-accent"
+                        aria-hidden
+                      />
+                    ) : null}
+                  </div>
+                  <h3 className="mt-2.5 line-clamp-2 font-display text-base leading-tight font-semibold tracking-tight text-text">
+                    <Highlight
+                      text={object.title}
+                      ranges={matchesById?.get(object.id) ?? []}
+                    />
+                  </h3>
+                  <p className="mt-1 line-clamp-2 text-xs text-muted">
+                    {object.content}
+                  </p>
+                  <div className="mt-3 flex items-center justify-between gap-2 text-2xs text-muted">
+                    <span className="inline-flex min-w-0 items-center gap-1.5">
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: color }}
+                        aria-hidden
+                      />
+                      <span className="truncate">{room?.name ?? "—"}</span>
+                    </span>
+                    <time className="tabular shrink-0">
+                      {relativeTime(object.updatedAt)}
+                    </time>
+                  </div>
+                </button>
+              );
+            })}
+            {hasMore ? <ListSentinel onVisible={sentinelRef} /> : null}
+          </div>
+        )}
+      </div>
     </>
   );
 }
